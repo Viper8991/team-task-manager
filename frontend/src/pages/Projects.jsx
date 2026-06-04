@@ -118,10 +118,12 @@ function Projects() {
           </p>
         </div>
 
-        <button onClick={() => setShowModal(true)} className="btn btn-primary">
-          <Plus size={18} />
-          New Project
-        </button>
+        {user?.role === 'ADMIN' && (
+          <button onClick={() => setShowModal(true)} className="btn btn-primary">
+            <Plus size={18} />
+            New Project
+          </button>
+        )}
       </div>
 
       {error && (
@@ -136,9 +138,13 @@ function Projects() {
           <Folder size={48} style={{ color: 'var(--text-dim)', marginBottom: '1rem' }} />
           <h3>No Projects Found</h3>
           <p style={{ color: 'var(--text-muted)', marginTop: '0.5rem', marginBottom: '1.5rem' }}>
-            You haven't created or joined any projects yet. Click 'New Project' to get started!
+            {user?.role === 'ADMIN' 
+              ? "You haven't created or joined any projects yet. Click 'New Project' to get started!"
+              : "You are not assigned to any projects. Please contact your workspace administrator."}
           </p>
-          <button onClick={() => setShowModal(true)} className="btn btn-primary">Create Project</button>
+          {user?.role === 'ADMIN' && (
+            <button onClick={() => setShowModal(true)} className="btn btn-primary">Create Project</button>
+          )}
         </div>
       ) : (
         <div className="projects-grid">

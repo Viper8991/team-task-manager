@@ -156,8 +156,8 @@ router.get('/:id', authenticateToken, checkProjectAccess, async (req, res) => {
   }
 });
 
-// Create a project (Any authenticated user can create)
-router.post('/', authenticateToken, async (req, res) => {
+// Create a project (Admin only)
+router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   const { name, description } = req.body;
 
   if (!name) {
