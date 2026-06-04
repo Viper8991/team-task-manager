@@ -111,12 +111,7 @@ function Profile() {
                   {user?.email}
                 </span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.9rem' }}>
-                <User size={16} style={{ color: 'var(--text-dim)', flexShrink: 0 }} />
-                <span style={{ color: 'var(--text-muted)' }}>
-                  ID: <span style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>{user?.id?.substring(0, 8)}...</span>
-                </span>
-              </div>
+
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.9rem' }}>
                 <Clock size={16} style={{ color: 'var(--text-dim)', flexShrink: 0 }} />
                 <span style={{ color: 'var(--text-muted)' }}>

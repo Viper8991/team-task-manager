@@ -169,26 +169,27 @@ function Navbar() {
           {/* Floating Notifications Card */}
           {showNotifications && (
             <div 
-              className="glass-card" 
               style={{ 
                 position: 'absolute', 
                 left: '105%', 
                 bottom: '-50px', 
-                width: '320px', 
+                width: '340px', 
                 zIndex: 1000, 
-                maxHeight: '380px', 
+                maxHeight: '400px', 
                 overflowY: 'auto', 
                 padding: '1.25rem', 
                 display: 'flex', 
                 flexDirection: 'column', 
                 gap: '0.75rem', 
-                boxShadow: '0 12px 30px rgba(0,0,0,0.25)', 
-                border: '1px solid var(--border-color)',
+                boxShadow: '0 15px 30px rgba(0,0,0,0.15), 0 5px 15px rgba(0,0,0,0.06)', 
+                border: '1px solid #e5e7eb',
+                borderRadius: '12px',
+                background: '#ffffff',
                 textAlign: 'left'
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', marginBottom: '0.25rem' }}>
-                <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>Notifications</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f3f4f6', paddingBottom: '0.75rem', marginBottom: '0.25rem' }}>
+                <span style={{ fontWeight: 700, fontSize: '0.95rem', color: '#1f2937' }}>Notifications</span>
                 {unreadCount > 0 && (
                   <button 
                     onClick={handleMarkAllRead} 
@@ -200,8 +201,10 @@ function Navbar() {
                       cursor: 'pointer', 
                       display: 'flex', 
                       alignItems: 'center', 
-                      gap: '2px',
-                      fontWeight: 600
+                      gap: '4px',
+                      fontWeight: 600,
+                      padding: '2px 6px',
+                      borderRadius: '4px'
                     }}
                   >
                     <CheckCheck size={14} /> Mark read
@@ -209,52 +212,56 @@ function Navbar() {
                 )}
               </div>
               {notifications.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-dim)', fontSize: '0.8rem', fontStyle: 'italic' }}>
+                <div style={{ textAlign: 'center', padding: '1.5rem', color: '#9ca3af', fontSize: '0.8rem', fontStyle: 'italic' }}>
                   No notifications yet.
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                   {notifications.map(notif => (
                     <div 
                       key={notif.id} 
                       style={{ 
                         display: 'flex', 
                         flexDirection: 'column', 
-                        gap: '0.25rem', 
-                        padding: '0.6rem', 
-                        background: notif.read ? 'rgba(0,0,0,0.01)' : 'rgba(139, 92, 246, 0.04)', 
-                        border: '1px solid var(--border-color)', 
-                        borderRadius: 'var(--radius-sm)', 
-                        position: 'relative' 
+                        gap: '0.35rem', 
+                        padding: '0.75rem', 
+                        background: notif.read ? '#f9fafb' : '#f5f3ff', 
+                        border: '1px solid',
+                        borderColor: notif.read ? '#e5e7eb' : '#ddd6fe',
+                        borderLeft: notif.read ? '4px solid #d1d5db' : '4px solid var(--primary)', 
+                        borderRadius: '6px',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
                       }}
                     >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <span style={{ fontWeight: 600, fontSize: '0.8rem', color: notif.read ? 'var(--text-muted)' : 'var(--text-main)', paddingRight: '1rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
+                        <span style={{ fontWeight: 750, fontSize: '0.825rem', color: notif.read ? '#4b5563' : '#1f2937', lineHeight: '1.25' }}>
                           {notif.title}
                         </span>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', position: 'absolute', right: '4px', top: '4px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
                           {!notif.read && (
                             <button 
                               onClick={() => handleMarkRead(notif.id)} 
                               title="Mark as Read" 
-                              style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--primary)', padding: '2px' }}
+                              style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--primary)', padding: '2px', display: 'flex', alignItems: 'center' }}
                             >
-                              <Check size={12} />
+                              <Check size={14} />
                             </button>
                           )}
                           <button 
                             onClick={() => handleDeleteNotif(notif.id)} 
                             title="Delete" 
-                            style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-dim)', padding: '2px' }}
+                            style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#9ca3af', padding: '2px', display: 'flex', alignItems: 'center' }}
+                            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-danger)'}
+                            onMouseLeave={(e) => e.currentTarget.style.color = '#9ca3af'}
                           >
-                            <Trash2 size={12} />
+                            <Trash2 size={14} />
                           </button>
                         </div>
                       </div>
-                      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0, paddingRight: '1.5rem', lineHeight: '1.2' }}>
+                      <p style={{ fontSize: '0.75rem', color: '#6b7280', margin: 0, lineHeight: '1.35' }}>
                         {notif.message}
                       </p>
-                      <span style={{ fontSize: '0.6rem', color: 'var(--text-dim)', display: 'block', marginTop: '0.25rem' }}>
+                      <span style={{ fontSize: '0.65rem', color: '#9ca3af', display: 'block', marginTop: '0.15rem' }}>
                         {new Date(notif.createdAt).toLocaleDateString()} {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>

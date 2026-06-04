@@ -117,32 +117,61 @@ function ProjectDetails() {
       setTaskSubmitting(true);
       setTaskError('');
 
-      const url = editingTask ? `/api/tasks/${editingTask.id}` : '/api/tasks';
-      const method = editingTask ? 'PUT' : 'POST';
-      const body = {
-        title: taskTitle,
-        description: taskDesc,
-        priority: taskPriority,
-        status: taskStatus,
-        dueDate: taskDueDate || null,
-        projectId: id,
-        assigneeId: assignToAll ? null : (taskAssigneeId || null),
-        assignToAll: editingTask ? false : assignToAll
-      };
+      const isEdit = !!editingTask;
+      const isGroupedEdit = isEdit && editingTask.ids && editingTask.ids.length > 1;
 
-      const response = await apiFetch(url, {
-        method,
-        body: JSON.stringify(body)
-      });
+      if (isGroupedEdit) {
+        // Update all tasks in the group in parallel
+        const responses = await Promise.all(
+          editingTask.ids.map(taskId => 
+            apiFetch(`/api/tasks/${taskId}`, {
+              method: 'PUT',
+              body: JSON.stringify({
+                title: taskTitle,
+                description: taskDesc,
+                priority: taskPriority,
+                status: taskStatus,
+                dueDate: taskDueDate || null
+              })
+            })
+          )
+        );
 
-      const data = await response.json();
-
-      if (response.ok) {
-        setShowTaskModal(false);
-        // Refresh project data
-        fetchData();
+        const allOk = responses.every(res => res.ok);
+        if (allOk) {
+          setShowTaskModal(false);
+          fetchData();
+        } else {
+          setTaskError('Failed to update all tasks in the group');
+        }
       } else {
-        setTaskError(data.error || 'Failed to submit task');
+        // Regular create or single edit
+        const url = isEdit ? `/api/tasks/${editingTask.id}` : '/api/tasks';
+        const method = isEdit ? 'PUT' : 'POST';
+        const body = {
+          title: taskTitle,
+          description: taskDesc,
+          priority: taskPriority,
+          status: taskStatus,
+          dueDate: taskDueDate || null,
+          projectId: id,
+          assigneeId: assignToAll ? null : (taskAssigneeId || null),
+          assignToAll: isEdit ? false : assignToAll
+        };
+
+        const response = await apiFetch(url, {
+          method,
+          body: JSON.stringify(body)
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          setShowTaskModal(false);
+          fetchData();
+        } else {
+          setTaskError(data.error || 'Failed to submit task');
+        }
       }
     } catch (err) {
       console.error(err);
@@ -153,18 +182,26 @@ function ProjectDetails() {
   };
 
   // Quick Task Status Switch (Accessible by Assignee or Admin)
-  const handleQuickStatusChange = async (taskId, newStatus) => {
+  const handleQuickStatusChange = async (taskId, newStatus, groupedIds = []) => {
     try {
-      const response = await apiFetch(`/api/tasks/${taskId}`, {
-        method: 'PUT',
-        body: JSON.stringify({ status: newStatus })
-      });
+      const idsToUpdate = groupedIds.length > 0 ? groupedIds : [taskId];
+      
+      const responses = await Promise.all(
+        idsToUpdate.map(id =>
+          apiFetch(`/api/tasks/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ status: newStatus })
+          })
+        )
+      );
 
-      if (response.ok) {
+      const allOk = responses.every(res => res.ok);
+
+      if (allOk) {
         // Optimistic UI update or full refetch
         setProject(prev => {
           const updatedTasks = prev.tasks.map(t => {
-            if (t.id === taskId) {
+            if (idsToUpdate.includes(t.id)) {
               return { ...t, status: newStatus };
             }
             return t;
@@ -172,8 +209,7 @@ function ProjectDetails() {
           return { ...prev, tasks: updatedTasks };
         });
       } else {
-        const data = await response.json();
-        alert(data.error || 'Failed to update task status');
+        alert('Failed to update one or more task status values');
         fetchData(); // Reset layout state
       }
     } catch (err) {
@@ -183,23 +219,30 @@ function ProjectDetails() {
   };
 
   // Delete Task (Admin only)
-  const handleDeleteTask = async (taskId, taskTitle) => {
+  const handleDeleteTask = async (taskId, taskTitle, groupedIds = []) => {
+    const idsToDelete = groupedIds.length > 0 ? groupedIds : [taskId];
     const confirmDelete = window.confirm(`Are you sure you want to delete the task "${taskTitle}"?`);
     if (!confirmDelete) return;
 
     try {
-      const response = await apiFetch(`/api/tasks/${taskId}`, {
-        method: 'DELETE'
-      });
+      const responses = await Promise.all(
+        idsToDelete.map(id =>
+          apiFetch(`/api/tasks/${id}`, {
+            method: 'DELETE'
+          })
+        )
+      );
 
-      if (response.ok) {
+      const allOk = responses.every(res => res.ok);
+
+      if (allOk) {
         setProject(prev => ({
           ...prev,
-          tasks: prev.tasks.filter(t => t.id !== taskId)
+          tasks: prev.tasks.filter(t => !idsToDelete.includes(t.id))
         }));
       } else {
-        const data = await response.json();
-        alert(data.error || 'Failed to delete task');
+        alert('Failed to delete one or more tasks');
+        fetchData();
       }
     } catch (err) {
       console.error(err);
@@ -317,15 +360,41 @@ function ProjectDetails() {
 
   if (!project) return null;
 
+  // Group duplicate tasks visually into a single task card with multiple assignees
+  const groupTasks = (taskList) => {
+    const groups = {};
+    taskList.forEach(task => {
+      // Group by key: title, description, priority, dueDate, status, creatorId
+      const key = `${task.title}|${task.description || ''}|${task.priority}|${task.dueDate || ''}|${task.status}|${task.creatorId}`;
+      if (!groups[key]) {
+        groups[key] = {
+          ...task,
+          ids: [task.id],
+          assignees: task.assignee ? [task.assignee] : []
+        };
+      } else {
+        groups[key].ids.push(task.id);
+        if (task.assignee) {
+          if (!groups[key].assignees.some(a => a.id === task.assignee.id)) {
+            groups[key].assignees.push(task.assignee);
+          }
+        }
+      }
+    });
+    return Object.values(groups);
+  };
+
+  const groupedTasks = groupTasks(project.tasks);
+
   // Kanban task breakdown
   const tasksByColumn = {
-    TODO: project.tasks.filter(t => t.status === 'TODO'),
-    IN_PROGRESS: project.tasks.filter(t => t.status === 'IN_PROGRESS'),
-    COMPLETED: project.tasks.filter(t => t.status === 'COMPLETED')
+    TODO: groupedTasks.filter(t => t.status === 'TODO'),
+    IN_PROGRESS: groupedTasks.filter(t => t.status === 'IN_PROGRESS'),
+    COMPLETED: groupedTasks.filter(t => t.status === 'COMPLETED')
   };
 
   const totalTasks = project.tasks.length;
-  const completedTasks = tasksByColumn.COMPLETED.length;
+  const completedTasks = project.tasks.filter(t => t.status === 'COMPLETED').length;
   const percentComplete = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
 
   // Filter out system users who are already project members
@@ -607,19 +676,25 @@ function ProjectDetails() {
 
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label htmlFor="taskAssignee">Assignee</label>
-                  <select
-                    id="taskAssignee"
-                    className="input-field"
-                    value={taskAssigneeId}
-                    disabled={assignToAll}
-                    style={{ opacity: assignToAll ? 0.5 : 1 }}
-                    onChange={(e) => setTaskAssigneeId(e.target.value)}
-                  >
-                    <option value="">Unassigned</option>
-                    {project.members.map(member => (
-                      <option key={member.userId} value={member.userId}>{member.user.name}</option>
-                    ))}
-                  </select>
+                  {editingTask && editingTask.ids && editingTask.ids.length > 1 ? (
+                    <div style={{ padding: '0.5rem 0.75rem', background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', fontSize: '0.8rem', color: 'var(--text-muted)', minHeight: '38px', display: 'flex', alignItems: 'center' }}>
+                      Multiple ({editingTask.assignees.map(a => a.name).join(', ')})
+                    </div>
+                  ) : (
+                    <select
+                      id="taskAssignee"
+                      className="input-field"
+                      value={taskAssigneeId}
+                      disabled={assignToAll}
+                      style={{ opacity: assignToAll ? 0.5 : 1 }}
+                      onChange={(e) => setTaskAssigneeId(e.target.value)}
+                    >
+                      <option value="">Unassigned</option>
+                      {project.members.map(member => (
+                        <option key={member.userId} value={member.userId}>{member.user.name}</option>
+                      ))}
+                    </select>
+                  )}
                 </div>
               </div>
 
@@ -783,7 +858,8 @@ function ProjectDetails() {
     
     // Check if the current user has permission to change this task's status
     // Admin or Project Owner has permissions for all. Members can ONLY change status of tasks assigned to them.
-    const canChangeStatus = user.role === 'ADMIN' || project.ownerId === user.id || task.assigneeId === user.id;
+    const isAssignee = task.assignees && task.assignees.some(a => a.id === user.id);
+    const canChangeStatus = user.role === 'ADMIN' || project.ownerId === user.id || isAssignee;
 
     return (
       <div key={task.id} className="glass-card task-card">
@@ -807,7 +883,7 @@ function ProjectDetails() {
                 <Edit3 size={12} />
               </button>
               <button 
-                onClick={() => handleDeleteTask(task.id, task.title)} 
+                onClick={() => handleDeleteTask(task.id, task.title, task.ids)} 
                 className="btn" 
                 style={{ background: 'none', border: 'none', padding: '0.2rem', color: 'var(--text-dim)' }}
                 onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-danger)'}
@@ -837,7 +913,7 @@ function ProjectDetails() {
             <select
               value={task.status}
               disabled={!canChangeStatus}
-              onChange={(e) => handleQuickStatusChange(task.id, e.target.value)}
+              onChange={(e) => handleQuickStatusChange(task.id, e.target.value, task.ids)}
               className="input-field badge-small"
               style={{
                 width: '100%',
@@ -859,16 +935,27 @@ function ProjectDetails() {
             </select>
           </div>
 
-          {/* Assignee Avatar */}
-          <div className="task-assignee">
-            {task.assignee ? (
-              <div 
-                className="avatar-circle" 
-                style={{ width: '22px', height: '22px', fontSize: '0.7rem' }} 
-                title={`Assigned to: ${task.assignee.name}`}
-              >
-                {task.assignee.name.charAt(0).toUpperCase()}
-              </div>
+          {/* Assignees Avatars Row */}
+          <div className="task-assignee" style={{ display: 'flex', alignItems: 'center', gap: '0.1rem', flexWrap: 'wrap-reverse', justifyContent: 'flex-end', maxWidth: '120px' }}>
+            {task.assignees && task.assignees.length > 0 ? (
+              task.assignees.map((assignee, idx) => (
+                <div 
+                  key={assignee.id}
+                  className="avatar-circle" 
+                  style={{ 
+                    width: '22px', 
+                    height: '22px', 
+                    fontSize: '0.7rem',
+                    marginLeft: idx > 0 ? '-6px' : '0', // Overlapping avatar style!
+                    border: '2px solid var(--card-bg, #ffffff)',
+                    zIndex: 10 - idx,
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                  }} 
+                  title={`Assigned to: ${assignee.name}`}
+                >
+                  {assignee.name.charAt(0).toUpperCase()}
+                </div>
+              ))
             ) : (
               <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontStyle: 'italic' }}>Unassigned</span>
             )}
