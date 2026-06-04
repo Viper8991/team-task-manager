@@ -15,7 +15,7 @@ function Projects() {
   const [createError, setCreateError] = useState('');
   const [creating, setCreating] = useState(false);
 
-  const { user, apiFetch } = useAuth();
+  const { user, apiFetch, refreshUser } = useAuth();
 
   const fetchProjects = async () => {
     try {
@@ -62,6 +62,8 @@ function Projects() {
         setShowModal(false);
         // Refresh project list
         setProjects([data, ...projects]);
+        // Sync the user's new ADMIN role on the client-side
+        await refreshUser();
       } else {
         setCreateError(data.error || 'Failed to create project');
       }
@@ -116,12 +118,10 @@ function Projects() {
           </p>
         </div>
 
-        {user?.role === 'ADMIN' && (
-          <button onClick={() => setShowModal(true)} className="btn btn-primary">
-            <Plus size={18} />
-            New Project
-          </button>
-        )}
+        <button onClick={() => setShowModal(true)} className="btn btn-primary">
+          <Plus size={18} />
+          New Project
+        </button>
       </div>
 
       {error && (
@@ -136,13 +136,9 @@ function Projects() {
           <Folder size={48} style={{ color: 'var(--text-dim)', marginBottom: '1rem' }} />
           <h3>No Projects Found</h3>
           <p style={{ color: 'var(--text-muted)', marginTop: '0.5rem', marginBottom: '1.5rem' }}>
-            {user?.role === 'ADMIN' 
-              ? "You haven't created any projects yet. Click 'New Project' above to get started!" 
-              : "You are not registered in any project boards. Please request an administrator to register you."}
+            You haven't created or joined any projects yet. Click 'New Project' to get started!
           </p>
-          {user?.role === 'ADMIN' && (
-            <button onClick={() => setShowModal(true)} className="btn btn-primary">Create Project</button>
-          )}
+          <button onClick={() => setShowModal(true)} className="btn btn-primary">Create Project</button>
         </div>
       ) : (
         <div className="projects-grid">

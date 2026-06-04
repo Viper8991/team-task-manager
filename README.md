@@ -63,21 +63,31 @@ Ensure you have **Node.js** (v18+) and **NPM** installed.
 ### 1. Clone the repository and install dependencies
 Initialize the root dependencies and the client dependencies:
 ```bash
-# Installs backend and triggers frontend installation automatically
-npm install
-
-# Installs frontend dependencies specifically
-npm install --prefix frontend
+# Run this command in the root folder to install backend and frontend packages
+npm run install-all
 ```
 
-### 2. Initialize the SQLite Database
-Synchronize the Prisma models to create a local SQLite database:
+### 2. Create the environment configuration file
+Create a file named `.env` in the root of the `team-task-manager` folder and copy the following configuration:
+```env
+# Database Connection String for SQLite
+DATABASE_URL="file:./dev.db"
+
+# JWT Token Secret for Authentication (use a secure secret in production)
+JWT_SECRET="super_secret_team_task_manager_key_12345"
+
+# Server Port
+PORT=3000
+```
+
+### 3. Initialize the SQLite Database
+Synchronize the Prisma models to generate the database schema:
 ```bash
 npx prisma db push
 ```
 *(This creates `prisma/dev.db` locally. The first user to register on the application is automatically granted the **ADMIN** role. All subsequent registrations are set to **MEMBER**).*
 
-### 3. Run the Development Server
+### 4. Run the Development Server
 Launch both the backend API server and the Vite React app concurrently:
 ```bash
 npm run dev

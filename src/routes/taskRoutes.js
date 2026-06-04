@@ -264,11 +264,36 @@ router.get('/dashboard', authenticateToken, async (req, res) => {
         if (allStats[t.status] !== undefined) allStats[t.status]++;
       });
 
+      // Tasks per user
+      const usersWithTasks = await prisma.user.findMany({
+        select: {
+          id: true,
+          name: true,
+          role: true,
+          _count: {
+            select: {
+              assignedTasks: true
+            }
+          }
+        },
+        orderBy: {
+          assignedTasks: {
+            _count: 'desc'
+          }
+        }
+      });
+
       adminStats = {
         totalUsers: allUsersCount,
         totalProjects: allProjectsCount,
         totalTasks: allTasksCount,
-        statusBreakdown: allStats
+        statusBreakdown: allStats,
+        tasksPerUser: usersWithTasks.map(u => ({
+          id: u.id,
+          name: u.name,
+          role: u.role,
+          taskCount: u._count.assignedTasks
+        }))
       };
     }
 

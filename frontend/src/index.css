@@ -218,6 +218,12 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--text-dim);
 }
 
+/* Hide native password reveal button in Edge/IE and clear buttons */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+
 /* Badge System */
 .badge {
   display: inline-flex;

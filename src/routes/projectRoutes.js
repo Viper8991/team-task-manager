@@ -125,8 +125,8 @@ router.get('/:id', authenticateToken, checkProjectAccess, async (req, res) => {
   }
 });
 
-// Create a project (Admin only)
-router.post('/', authenticateToken, requireAdmin, async (req, res) => {
+// Create a project (Any authenticated user can create; MEMBER creator becomes ADMIN)
+router.post('/', authenticateToken, async (req, res) => {
   const { name, description } = req.body;
 
   if (!name) {
@@ -134,6 +134,15 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   }
 
   try {
+    // Creator becomes Admin (if they are a Member)
+    if (req.user.role === 'MEMBER') {
+      await prisma.user.update({
+        where: { id: req.user.id },
+        data: { role: 'ADMIN' }
+      });
+      req.user.role = 'ADMIN';
+    }
+
     // Create project and automatically add owner as a member
     const project = await prisma.project.create({
       data: {

@@ -115,6 +115,24 @@ export const AuthProvider = ({ children }) => {
     return response;
   };
 
+  const refreshUser = async () => {
+    if (!token) return;
+    try {
+      const response = await fetch('/api/auth/me', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setUser(data.user);
+        return data.user;
+      }
+    } catch (error) {
+      console.error('Error refreshing user:', error);
+    }
+  };
+
   const value = {
     user,
     token,
@@ -122,7 +140,8 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
-    apiFetch
+    apiFetch,
+    refreshUser
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

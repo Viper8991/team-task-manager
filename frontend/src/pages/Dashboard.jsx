@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
   ClipboardList, CheckCircle, Clock, AlertCircle, 
-  Folder, Users, FileText, ChevronRight, Play, Calendar
+  Folder, Users, FileText, ChevronRight, Play, Calendar, X
 } from 'lucide-react';
 
 function Dashboard() {
@@ -12,6 +12,26 @@ function Dashboard() {
   const [error, setError] = useState('');
   const { user, apiFetch } = useAuth();
   const navigate = useNavigate();
+
+  const [showUsersModal, setShowUsersModal] = useState(false);
+  const [systemUsers, setSystemUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  const handleOpenUsersModal = async () => {
+    setShowUsersModal(true);
+    try {
+      setLoadingUsers(true);
+      const response = await apiFetch('/api/auth/users');
+      if (response.ok) {
+        const usersList = await response.json();
+        setSystemUsers(usersList);
+      }
+    } catch (err) {
+      console.error('Error fetching system users:', err);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
 
   const fetchDashboardData = async () => {
     try {
@@ -87,7 +107,12 @@ function Dashboard() {
             System-Wide Statistics (Admin View)
           </h3>
           <div className="dashboard-grid">
-            <div className="glass-card stat-card interactive">
+            <div 
+              className="glass-card stat-card interactive" 
+              onClick={handleOpenUsersModal}
+              style={{ cursor: 'pointer' }}
+              title="Click to view workspace users"
+            >
               <span className="label">Total System Users</span>
               <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
                 <span className="value">{adminStats.totalUsers}</span>
@@ -257,8 +282,75 @@ function Dashboard() {
               </div>
             </div>
           </div>
+
+          {/* Admin: Tasks per User Widget */}
+          {user?.role === 'ADMIN' && adminStats?.tasksPerUser && (
+            <div className="glass-card" style={{ marginTop: '2rem' }}>
+              <h3 style={{ fontSize: '1.2rem', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Users size={18} style={{ color: 'var(--primary)' }} />
+                Tasks per User
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {adminStats.tasksPerUser.map(item => (
+                  <div key={item.id} className="flex-between" style={{ padding: '0.75rem', background: 'rgba(0, 0, 0, 0.2)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{item.name}</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{item.role}</span>
+                    </div>
+                    <span className="badge badge-todo" style={{ fontWeight: 700 }}>
+                      {item.taskCount} {item.taskCount === 1 ? 'task' : 'tasks'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Users Modal */}
+      {showUsersModal && (
+        <div className="modal-overlay" onClick={() => setShowUsersModal(false)}>
+          <div className="glass-card modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+            <div className="modal-header">
+              <h3 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Users size={22} style={{ color: 'var(--primary)' }} />
+                Workspace Members
+              </h3>
+              <button onClick={() => setShowUsersModal(false)} className="modal-close"><X size={20} /></button>
+            </div>
+
+            {loadingUsers ? (
+              <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                Loading workspace members...
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', maxHeight: '350px', overflowY: 'auto', paddingRight: '0.25rem' }}>
+                {systemUsers.map(u => (
+                  <div key={u.id} className="flex-between" style={{ padding: '0.75rem 1rem', background: 'rgba(0, 0, 0, 0.2)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div className="avatar-circle" style={{ width: '32px', height: '32px', fontSize: '0.9rem', flexShrink: 0 }}>
+                        {u.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{u.name}</span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{u.email}</span>
+                      </div>
+                    </div>
+                    <span className={`badge ${u.role === 'ADMIN' ? 'badge-admin' : 'badge-member'}`} style={{ fontSize: '0.7rem' }}>
+                      {u.role}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+              <button onClick={() => setShowUsersModal(false)} className="btn btn-secondary">Close</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
