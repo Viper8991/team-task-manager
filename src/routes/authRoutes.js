@@ -140,4 +140,44 @@ router.get('/users', authenticateToken, async (req, res) => {
   }
 });
 
+// Reset password (Demo / Self-service reset)
+router.post('/reset-password', async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password are required' });
+  }
+
+  if (password.length < 8) {
+    return res.status(400).json({ error: 'Password must be at least 8 characters long' });
+  }
+
+  if (!/[a-zA-Z]/.test(password) || !/\d/.test(password) || !/[^a-zA-Z0-9]/.test(password)) {
+    return res.status(400).json({ error: 'Password must contain letters, numbers, and symbols' });
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'Email not found' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
+
+    await prisma.user.update({
+      where: { email },
+      data: { password: passwordHash }
+    });
+
+    return res.json({ message: 'Password reset successfully' });
+  } catch (error) {
+    console.error('Error resetting password:', error);
+    return res.status(500).json({ error: 'Failed to reset password' });
+  }
+});
+
 module.exports = router;
