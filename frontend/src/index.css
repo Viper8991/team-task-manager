@@ -689,48 +689,229 @@ input::-ms-clear {
 }
 
 /* Auth Pages Specific */
+/* Auth Pages Specific */
 .auth-page {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: calc(100vh - 120px);
+  min-height: 100vh;
   padding: 1.5rem;
 }
 
 .auth-card {
   width: 100%;
-  max-width: 420px;
-  padding: 2.5rem;
+  max-width: 440px;
+  padding: 3rem 2.5rem;
+  background: #ffffff !important;
+  border-radius: 24px !important;
+  border: 1px solid rgba(0, 0, 0, 0.04) !important;
+  box-shadow: 0 20px 40px -15px rgba(99, 102, 241, 0.08), 0 15px 30px -20px rgba(0, 0, 0, 0.05) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 .auth-header {
   text-align: center;
   margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .auth-header h2 {
-  font-size: 2rem;
-  font-weight: 800;
+  font-size: 2.1rem;
+  font-weight: 700;
+  margin-top: 1.5rem;
   margin-bottom: 0.5rem;
-  background: linear-gradient(135deg, hsl(262, 80%, 50%) 0%, hsl(330, 85%, 55%) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #1e1b4b; /* Dark indigo */
+  font-family: 'Outfit', sans-serif;
+  letter-spacing: -0.03em;
 }
 
+.auth-header h2 span.purple-text {
+  color: #6366f1; /* Vibrant purple */
+}
+
+.auth-header p.subtitle {
+  color: #6b7280;
+  font-size: 0.95rem;
+  margin-top: 0.25rem;
+}
+
+/* Custom form and input styling for Ethara AI design */
+.auth-card .form-group {
+  margin-bottom: 1.25rem;
+  text-align: left;
+}
+
+.auth-card .form-group label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #4b5563; /* Muted slate gray */
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.5rem;
+}
+
+.auth-card .input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.auth-card .input-field {
+  width: 100%;
+  background: #ffffff;
+  border: 1.5px solid #e4e4e7;
+  border-radius: 12px;
+  padding: 0.85rem 1rem 0.85rem 2.8rem;
+  color: #1f2937;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  transition: all 0.2s ease-in-out;
+  outline: none;
+}
+
+.auth-card .input-field:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+  background: #ffffff;
+}
+
+.auth-card .input-field::placeholder {
+  color: #a1a1aa;
+}
+
+.auth-card .input-icon-left {
+  position: absolute;
+  left: 1rem;
+  color: #a1a1aa;
+  pointer-events: none;
+}
+
+.auth-card .input-icon-right {
+  position: absolute;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: #a1a1aa;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  transition: color 0.15s ease;
+}
+
+.auth-card .input-icon-right:hover {
+  color: #4b5563;
+}
+
+.auth-card .forgot-password-link {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: #6366f1;
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: color 0.15s ease;
+  font-family: inherit;
+}
+
+.auth-card .forgot-password-link:hover {
+  color: #4f46e5;
+  text-decoration: underline;
+}
+
+/* Primary Button Styling to match screenshot */
+.auth-card .btn-continue {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  height: 50px;
+  background: #6366f1;
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 500;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-top: 1.5rem;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
+}
+
+.auth-card .btn-continue:hover {
+  background: #4f46e5;
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+  transform: translateY(-1px);
+}
+
+.auth-card .btn-continue:active {
+  transform: translateY(1px);
+}
+
+.auth-card .btn-continue:disabled {
+  background: #a5b4fc;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Divider Line Styling */
+.auth-card .divider-container {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 1.75rem 0;
+  width: 100%;
+}
+
+.auth-card .divider-container::before,
+.auth-card .divider-container::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #e4e4e7;
+}
+
+.auth-card .divider-container::before {
+  margin-right: .75rem;
+}
+
+.auth-card .divider-container::after {
+  margin-left: .75rem;
+}
+
+.auth-card .divider-text {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #a1a1aa;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Footer layout */
 .auth-footer {
   text-align: center;
   margin-top: 1.5rem;
-  font-size: 0.9rem;
-  color: var(--text-muted);
+  font-size: 0.85rem;
+  color: #6b7280;
 }
 
 .auth-footer a {
-  color: var(--primary);
+  color: #6366f1;
   text-decoration: none;
   font-weight: 600;
+  transition: color 0.15s ease;
 }
+
 .auth-footer a:hover {
+  color: #4f46e5;
   text-decoration: underline;
 }
 

@@ -1,7 +1,23 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { UserPlus, Mail, Lock, User, AlertTriangle, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, User, AlertTriangle, Eye, EyeOff, ArrowRight } from 'lucide-react';
+
+// Stylized Ethara AI Logo Component
+const EtharaLogo = ({ size = 36 }) => (
+  <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <g transform="translate(50, 50)">
+      {[30, 90, 150, 210, 270, 330].map((angle) => (
+        <path
+          key={angle}
+          d="M 0,-8 C -7,-8 -12,-18 -12,-28 C -12,-38 -6,-44 0,-44 C 6,-44 12,-38 12,-28 C 12,-18 7,-8 0,-8 Z"
+          fill="#6366f1"
+          transform={`rotate(${angle})`}
+        />
+      ))}
+    </g>
+  </svg>
+);
 
 function Signup() {
   const [name, setName] = useState('');
@@ -53,15 +69,15 @@ function Signup() {
 
   return (
     <div className="auth-page">
-      <div className="glass-card auth-card">
+      <div className="auth-card">
         <div className="auth-header">
-          <div style={{ display: 'inline-flex', padding: '1rem', borderRadius: '50%', background: 'var(--primary-glow)', color: 'var(--primary)', marginBottom: '1rem' }}>
-            <UserPlus size={28} />
+          {/* Logo container matching screenshot */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem' }}>
+            <EtharaLogo size={34} />
+            <span style={{ fontSize: '1.45rem', fontWeight: 700, color: '#1e1b4b', fontFamily: "'Outfit', sans-serif", letterSpacing: '-0.02em' }}>Ethara AI</span>
           </div>
           <h2>Create Workspace Account</h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.5rem' }}>
-            Join the workspace and collaborate on projects
-          </p>
+          <p className="subtitle">Join the workspace and collaborate on projects</p>
         </div>
 
         {error && (
@@ -74,16 +90,15 @@ function Signup() {
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="name">Full Name</label>
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <User size={18} style={{ position: 'absolute', left: '1rem', color: 'var(--text-dim)' }} />
+            <div className="input-container">
+              <User size={18} className="input-icon-left" />
               <input
                 id="name"
                 type="text"
-                className="input-field full-width"
+                className="input-field"
                 placeholder="Your Full Name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                style={{ paddingLeft: '2.8rem' }}
                 required
               />
             </div>
@@ -91,16 +106,15 @@ function Signup() {
 
           <div className="form-group">
             <label htmlFor="email">Email Address</label>
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <Mail size={18} style={{ position: 'absolute', left: '1rem', color: 'var(--text-dim)' }} />
+            <div className="input-container">
+              <Mail size={18} className="input-icon-left" />
               <input
                 id="email"
                 type="email"
-                className="input-field full-width"
+                className="input-field"
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                style={{ paddingLeft: '2.8rem' }}
                 required
               />
             </div>
@@ -108,35 +122,21 @@ function Signup() {
 
           <div className="form-group">
             <label htmlFor="password">Password</label>
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <Lock size={18} style={{ position: 'absolute', left: '1rem', color: 'var(--text-dim)' }} />
+            <div className="input-container">
+              <Lock size={18} className="input-icon-left" />
               <input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
-                className="input-field full-width"
+                className="input-field"
                 placeholder="Min. 8 chars (letters, numbers, symbols)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                style={{ paddingLeft: '2.8rem', paddingRight: '2.8rem' }}
                 required
               />
               <button
                 type="button"
+                className="input-icon-right"
                 onClick={() => setShowPassword(!showPassword)}
-                style={{
-                  position: 'absolute',
-                  right: '1rem',
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--text-dim)',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: 0,
-                  transition: 'color var(--transition-fast)'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-main)'}
-                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-dim)'}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
@@ -145,35 +145,21 @@ function Signup() {
 
           <div className="form-group">
             <label htmlFor="confirmPassword">Confirm Password</label>
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <Lock size={18} style={{ position: 'absolute', left: '1rem', color: 'var(--text-dim)' }} />
+            <div className="input-container">
+              <Lock size={18} className="input-icon-left" />
               <input
                 id="confirmPassword"
                 type={showConfirmPassword ? 'text' : 'password'}
-                className="input-field full-width"
+                className="input-field"
                 placeholder="Repeat password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                style={{ paddingLeft: '2.8rem', paddingRight: '2.8rem' }}
                 required
               />
               <button
                 type="button"
+                className="input-icon-right"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                style={{
-                  position: 'absolute',
-                  right: '1rem',
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--text-dim)',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: 0,
-                  transition: 'color var(--transition-fast)'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-main)'}
-                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-dim)'}
               >
                 {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
@@ -182,11 +168,12 @@ function Signup() {
 
           <button
             type="submit"
-            className="btn btn-primary full-width"
-            style={{ marginTop: '1rem' }}
+            className="btn-continue"
             disabled={submitting}
+            style={{ marginTop: '1.5rem' }}
           >
-            {submitting ? 'Creating Profile...' : 'Register'}
+            <span>{submitting ? 'Creating Profile...' : 'Register'}</span>
+            {!submitting && <ArrowRight size={18} />}
           </button>
         </form>
 

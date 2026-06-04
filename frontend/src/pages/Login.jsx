@@ -1,7 +1,23 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LogIn, Mail, Lock, AlertTriangle, Eye, EyeOff, X, ShieldAlert } from 'lucide-react';
+import { Mail, Lock, AlertTriangle, Eye, EyeOff, X, ShieldAlert, ArrowRight } from 'lucide-react';
+
+// Stylized Ethara AI Logo Component
+const EtharaLogo = ({ size = 36 }) => (
+  <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <g transform="translate(50, 50)">
+      {[30, 90, 150, 210, 270, 330].map((angle) => (
+        <path
+          key={angle}
+          d="M 0,-8 C -7,-8 -12,-18 -12,-28 C -12,-38 -6,-44 0,-44 C 6,-44 12,-38 12,-28 C 12,-18 7,-8 0,-8 Z"
+          fill="#6366f1"
+          transform={`rotate(${angle})`}
+        />
+      ))}
+    </g>
+  </svg>
+);
 
 function Login() {
   const [email, setEmail] = useState('');
@@ -40,15 +56,15 @@ function Login() {
 
   return (
     <div className="auth-page">
-      <div className="glass-card auth-card animate-pulse-slow-disabled">
+      <div className="auth-card">
         <div className="auth-header">
-          <div style={{ display: 'inline-flex', padding: '1rem', borderRadius: '50%', background: 'var(--primary-glow)', color: 'var(--primary)', marginBottom: '1rem' }}>
-            <LogIn size={28} />
+          {/* Logo container matching screenshot */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem' }}>
+            <EtharaLogo size={34} />
+            <span style={{ fontSize: '1.45rem', fontWeight: 700, color: '#1e1b4b', fontFamily: "'Outfit', sans-serif", letterSpacing: '-0.02em' }}>Ethara AI</span>
           </div>
-          <h2>Access Workspace</h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.5rem' }}>
-            Sign in to manage tasks and projects
-          </p>
+          <h2>Welcome to <span className="purple-text">Ethara AI</span></h2>
+          <p className="subtitle">Sign in to access your workspace</p>
         </div>
 
         {error && (
@@ -61,16 +77,15 @@ function Login() {
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="email">Email Address</label>
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <Mail size={18} style={{ position: 'absolute', left: '1rem', color: 'var(--text-dim)' }} />
+            <div className="input-container">
+              <Mail size={18} className="input-icon-left" />
               <input
                 id="email"
                 type="email"
-                className="input-field full-width"
-                placeholder="you@example.com"
+                className="input-field"
+                placeholder="Enter your work email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                style={{ paddingLeft: '2.8rem' }}
                 required
               />
             </div>
@@ -78,54 +93,32 @@ function Login() {
 
           <div className="form-group">
             <label htmlFor="password">Password</label>
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <Lock size={18} style={{ position: 'absolute', left: '1rem', color: 'var(--text-dim)' }} />
+            <div className="input-container">
+              <Lock size={18} className="input-icon-left" />
               <input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
-                className="input-field full-width"
-                placeholder="••••••••"
+                className="input-field"
+                placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                style={{ paddingLeft: '2.8rem', paddingRight: '2.8rem' }}
                 required
               />
               <button
                 type="button"
+                className="input-icon-right"
                 onClick={() => setShowPassword(!showPassword)}
-                style={{
-                  position: 'absolute',
-                  right: '1rem',
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--text-dim)',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: 0,
-                  transition: 'color var(--transition-fast)'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-main)'}
-                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-dim)'}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '-0.5rem', marginBottom: '1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem', marginBottom: '1rem' }}>
             <button
               type="button"
               onClick={() => setShowResetModal(true)}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: 'var(--primary-light)',
-                cursor: 'pointer',
-                fontSize: '0.85rem',
-                textDecoration: 'underline',
-                padding: 0
-              }}
+              className="forgot-password-link"
             >
               Forgot Password?
             </button>
@@ -133,13 +126,17 @@ function Login() {
 
           <button
             type="submit"
-            className="btn btn-primary full-width"
-            style={{ marginTop: '0.5rem' }}
+            className="btn-continue"
             disabled={submitting}
           >
-            {submitting ? 'Authenticating...' : 'Sign In'}
+            <span>{submitting ? 'Please wait...' : 'Continue'}</span>
+            {!submitting && <ArrowRight size={18} />}
           </button>
         </form>
+
+        <div className="divider-container">
+          <span className="divider-text">OR</span>
+        </div>
 
         <div className="auth-footer">
           Don't have an account? <Link to="/signup">Create one here</Link>
