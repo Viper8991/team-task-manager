@@ -218,6 +218,42 @@ function Projects() {
     }
   };
 
+  // Add All unassigned users to project
+  const handleAddAllMembers = async () => {
+    if (unassignedUsers.length === 0) return;
+    setMemberActionError('');
+
+    try {
+      const userIds = unassignedUsers.map(u => u.id);
+      const response = await apiFetch(`/api/projects/${editingProject.id}/members`, {
+        method: 'POST',
+        body: JSON.stringify({ userIds })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Re-fetch project members to sync
+        const projRes = await apiFetch(`/api/projects/${editingProject.id}`);
+        if (projRes.ok) {
+          const projData = await projRes.json();
+          setProjectMembers(projData.members || []);
+          // Sync count on main list
+          setProjects(projects.map(p => p.id === editingProject.id ? {
+            ...p,
+            _count: { ...p._count, members: projData.members.length }
+          } : p));
+        }
+        setSelectedUserToAdd('');
+      } else {
+        setMemberActionError(data.error || 'Failed to add members');
+      }
+    } catch (err) {
+      console.error(err);
+      setMemberActionError('Error adding all members to project');
+    }
+  };
+
   // Remove Member
   const handleRemoveMember = async (memberId) => {
     if (memberId === editingProject.ownerId) {
@@ -492,30 +528,43 @@ function Projects() {
                 </h4>
 
                 {/* Add member sub-form */}
-                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-                  <select 
-                    className="form-control" 
-                    value={selectedUserToAdd}
-                    onChange={(e) => setSelectedUserToAdd(e.target.value)}
-                    style={{ flex: 1, fontSize: '0.85rem' }}
-                  >
-                    <option value="">Select user to add...</option>
-                    {unassignedUsers.map(u => (
-                      <option key={u.id} value={u.id}>
-                        {u.name} ({u.role})
-                      </option>
-                    ))}
-                  </select>
-                  <button 
-                    type="button" 
-                    onClick={handleAddMember}
-                    className="btn btn-primary" 
-                    style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
-                    disabled={!selectedUserToAdd}
-                  >
-                    <UserPlus size={16} />
-                    Add
-                  </button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <select 
+                      className="form-control" 
+                      value={selectedUserToAdd}
+                      onChange={(e) => setSelectedUserToAdd(e.target.value)}
+                      style={{ flex: 1, fontSize: '0.85rem' }}
+                    >
+                      <option value="">Select user to add...</option>
+                      {unassignedUsers.map(u => (
+                        <option key={u.id} value={u.id}>
+                          {u.name} ({u.role})
+                        </option>
+                      ))}
+                    </select>
+                    <button 
+                      type="button" 
+                      onClick={handleAddMember}
+                      className="btn btn-primary" 
+                      style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                      disabled={!selectedUserToAdd}
+                    >
+                      <UserPlus size={16} />
+                      Add
+                    </button>
+                  </div>
+                  {unassignedUsers.length > 0 && (
+                    <button 
+                      type="button"
+                      onClick={handleAddAllMembers}
+                      className="btn btn-secondary"
+                      style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', width: '100%' }}
+                    >
+                      <Users size={14} />
+                      Add All Remaining Users ({unassignedUsers.length})
+                    </button>
+                  )}
                 </div>
 
                 {memberActionError && (

@@ -47,6 +47,7 @@ function Navbar() {
   useEffect(() => {
     fetchTeams();
     fetchNotifications();
+    setShowNotifications(false); // Close notifications panel on route navigation
 
     // Poll for notifications every 10 seconds
     const interval = setInterval(fetchNotifications, 10000);
