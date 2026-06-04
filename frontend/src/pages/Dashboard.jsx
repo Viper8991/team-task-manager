@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
   ClipboardList, CheckCircle, Clock, AlertCircle, 
-  Folder, Users, FileText, ChevronRight, Play, Calendar, X
+  Folder, Users, FileText, ChevronRight, Play, Calendar, X, Key
 } from 'lucide-react';
 
 function Dashboard() {
@@ -16,6 +16,60 @@ function Dashboard() {
   const [showUsersModal, setShowUsersModal] = useState(false);
   const [systemUsers, setSystemUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+
+  // Admin Reset Password State
+  const [targetResetUser, setTargetResetUser] = useState(null);
+  const [showResetPrompt, setShowResetPrompt] = useState(false);
+  const [resetNewPassword, setResetNewPassword] = useState('');
+  const [resetError, setResetError] = useState('');
+  const [resetSuccess, setResetSuccess] = useState('');
+  const [resetSubmitting, setResetSubmitting] = useState(false);
+
+  const handleAdminResetPassword = async (e) => {
+    e.preventDefault();
+    if (!targetResetUser || !resetNewPassword) {
+      setResetError('Password is required');
+      return;
+    }
+    if (resetNewPassword.length < 8) {
+      setResetError('Password must be at least 8 characters');
+      return;
+    }
+    if (!/[a-zA-Z]/.test(resetNewPassword) || !/\d/.test(resetNewPassword) || !/[^a-zA-Z0-9]/.test(resetNewPassword)) {
+      setResetError('Password must contain letters, numbers, and symbols');
+      return;
+    }
+
+    try {
+      setResetError('');
+      setResetSuccess('');
+      setResetSubmitting(true);
+
+      const response = await apiFetch('/api/auth/admin-reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: targetResetUser.id, newPassword: resetNewPassword })
+      });
+
+      const resData = await response.json();
+      if (!response.ok) {
+        throw new Error(resData.error || 'Failed to reset password');
+      }
+
+      setResetSuccess(`Password for ${targetResetUser.name} reset successfully!`);
+      setResetNewPassword('');
+      setTimeout(() => {
+        setShowResetPrompt(false);
+        setTargetResetUser(null);
+        setResetSuccess('');
+      }, 2000);
+    } catch (err) {
+      console.error(err);
+      setResetError(err.message || 'Failed to reset password');
+    } finally {
+      setResetSubmitting(false);
+    }
+  };
 
   const handleOpenUsersModal = async () => {
     setShowUsersModal(true);
@@ -337,9 +391,29 @@ function Dashboard() {
                         <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{u.email}</span>
                       </div>
                     </div>
-                    <span className={`badge ${u.role === 'ADMIN' ? 'badge-admin' : 'badge-member'}`} style={{ fontSize: '0.7rem' }}>
-                      {u.role}
-                    </span>
+                    
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <span className={`badge ${u.role === 'ADMIN' ? 'badge-admin' : 'badge-member'}`} style={{ fontSize: '0.7rem' }}>
+                        {u.role}
+                      </span>
+                      {user?.role === 'ADMIN' && (
+                        <button
+                          onClick={() => {
+                            setTargetResetUser(u);
+                            setShowResetPrompt(true);
+                            setResetNewPassword('');
+                            setResetError('');
+                            setResetSuccess('');
+                          }}
+                          className="btn btn-secondary btn-small"
+                          style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '0.25rem', height: 'fit-content' }}
+                          title="Reset user password"
+                        >
+                          <Key size={12} />
+                          Reset
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -348,6 +422,84 @@ function Dashboard() {
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
               <button onClick={() => setShowUsersModal(false)} className="btn btn-secondary">Close</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Admin User Password Reset Modal */}
+      {showResetPrompt && targetResetUser && (
+        <div className="modal-overlay" style={{ zIndex: 1100 }}>
+          <div className="glass-card modal-content" style={{ maxWidth: '400px', width: '100%', margin: '0 1rem' }}>
+            <div className="modal-header">
+              <h3 className="modal-title">Reset User Password</h3>
+              <button 
+                onClick={() => {
+                  setShowResetPrompt(false);
+                  setTargetResetUser(null);
+                }} 
+                className="modal-close"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ marginBottom: '1.25rem' }}>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                Resetting password for: <strong style={{ color: 'var(--text-main)' }}>{targetResetUser.name}</strong> ({targetResetUser.email})
+              </p>
+            </div>
+
+            {resetError && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-danger)', background: 'var(--color-danger-bg)', padding: '0.8rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(239, 68, 68, 0.2)', marginBottom: '1.25rem', fontSize: '0.85rem' }}>
+                <AlertCircle size={18} style={{ flexShrink: 0 }} />
+                <span>{resetError}</span>
+              </div>
+            )}
+
+            {resetSuccess && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#10b981', background: 'rgba(16, 185, 129, 0.1)', padding: '0.8rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(16, 185, 129, 0.2)', marginBottom: '1.25rem', fontSize: '0.85rem' }}>
+                <span>{resetSuccess}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleAdminResetPassword}>
+              <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                <label htmlFor="admin-new-password">New Password</label>
+                <input
+                  id="admin-new-password"
+                  type="text"
+                  className="input-field full-width"
+                  placeholder="Enter temporary password"
+                  value={resetNewPassword}
+                  onChange={(e) => setResetNewPassword(e.target.value)}
+                  required
+                />
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem', lineHeight: '1.4' }}>
+                  Must be at least 8 characters and contain letters, numbers, and symbols.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowResetPrompt(false);
+                    setTargetResetUser(null);
+                  }}
+                  className="btn"
+                  style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-main)' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={resetSubmitting}
+                >
+                  {resetSubmitting ? 'Resetting...' : 'Update Password'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -140,90 +140,47 @@ router.get('/users', authenticateToken, async (req, res) => {
   }
 });
 
-// Store reset codes in memory (expires in 10 minutes)
-const resetCodes = new Map();
-
-// Request password reset (Generates OTP)
-router.post('/forgot-password', async (req, res) => {
-  const { email } = req.body;
-
-  if (!email) {
-    return res.status(400).json({ error: 'Email is required' });
+// Admin-assisted password reset
+router.post('/admin-reset-password', authenticateToken, async (req, res) => {
+  // Check if the requester is an ADMIN
+  if (req.user.role !== 'ADMIN') {
+    return res.status(403).json({ error: 'Access denied. Admins only.' });
   }
 
-  try {
-    const user = await prisma.user.findUnique({
-      where: { email }
-    });
+  const { userId, newPassword } = req.body;
 
-    if (!user) {
-      return res.status(404).json({ error: 'Email not found' });
-    }
-
-    // Generate random 6-digit code
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    const expires = Date.now() + 10 * 60 * 1000; // 10 minutes
-
-    resetCodes.set(email, { code, expires });
-
-    console.log(`\n==================================================`);
-    console.log(`🔑 [DEMO PASSWORD RESET]`);
-    console.log(`Email: ${email}`);
-    console.log(`Verification Code: ${code}`);
-    console.log(`==================================================\n`);
-
-    return res.json({ message: 'Reset code generated successfully. Please check server logs.' });
-  } catch (error) {
-    console.error('Error requesting password reset:', error);
-    return res.status(500).json({ error: 'Failed to request reset' });
-  }
-});
-
-// Verify OTP and reset password
-router.post('/reset-password', async (req, res) => {
-  const { email, code, password } = req.body;
-
-  if (!email || !code || !password) {
-    return res.status(400).json({ error: 'All fields are required' });
+  if (!userId || !newPassword) {
+    return res.status(400).json({ error: 'User ID and new password are required' });
   }
 
-  if (password.length < 8) {
+  if (newPassword.length < 8) {
     return res.status(400).json({ error: 'Password must be at least 8 characters long' });
   }
 
-  if (!/[a-zA-Z]/.test(password) || !/\d/.test(password) || !/[^a-zA-Z0-9]/.test(password)) {
+  if (!/[a-zA-Z]/.test(newPassword) || !/\d/.test(newPassword) || !/[^a-zA-Z0-9]/.test(newPassword)) {
     return res.status(400).json({ error: 'Password must contain letters, numbers, and symbols' });
   }
 
   try {
-    const resetData = resetCodes.get(email);
-
-    if (!resetData || resetData.code !== code || Date.now() > resetData.expires) {
-      return res.status(400).json({ error: 'Invalid or expired verification code' });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { email }
+    const targetUser = await prisma.user.findUnique({
+      where: { id: userId }
     });
 
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+    if (!targetUser) {
+      return res.status(404).json({ error: 'Target user not found' });
     }
 
     const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(password, salt);
+    const passwordHash = await bcrypt.hash(newPassword, salt);
 
     await prisma.user.update({
-      where: { email },
+      where: { id: userId },
       data: { passwordHash: passwordHash }
     });
 
-    // Clear verification code
-    resetCodes.delete(email);
-
-    return res.json({ message: 'Password reset successfully' });
+    return res.json({ message: `Password for ${targetUser.name} reset successfully.` });
   } catch (error) {
-    console.error('Error resetting password:', error);
+    console.error('Error in admin password reset:', error);
     return res.status(500).json({ error: 'Failed to reset password' });
   }
 });
