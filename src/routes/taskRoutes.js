@@ -6,7 +6,7 @@ const router = express.Router();
 
 // Create a task (Admin only)
 router.post('/', authenticateToken, requireAdmin, async (req, res) => {
-  const { title, description, priority, status, dueDate, projectId, assigneeId } = req.body;
+  const { title, description, priority, status, dueDate, projectId, assigneeId, assignToAll } = req.body;
 
   if (!title || !projectId) {
     return res.status(400).json({ error: 'Title and Project ID are required' });
@@ -20,6 +20,45 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
 
     if (!project) {
       return res.status(404).json({ error: 'Project not found' });
+    }
+
+    if (assignToAll) {
+      // Fetch all project members
+      const members = await prisma.projectMember.findMany({
+        where: { projectId }
+      });
+
+      if (members.length === 0) {
+        return res.status(400).json({ error: 'No members found in this project to assign tasks to' });
+      }
+
+      // Create a task for each project member
+      const tasks = await Promise.all(
+        members.map(member =>
+          prisma.task.create({
+            data: {
+              title,
+              description,
+              priority: priority || 'MEDIUM',
+              status: status || 'TODO',
+              dueDate: dueDate ? new Date(dueDate) : null,
+              projectId,
+              assigneeId: member.userId,
+              creatorId: req.user.id
+            },
+            include: {
+              assignee: {
+                select: { id: true, name: true, email: true }
+              },
+              creator: {
+                select: { id: true, name: true }
+              }
+            }
+          })
+        )
+      );
+
+      return res.status(201).json(tasks[0]);
     }
 
     // Verify assignee is a member of this project (if assignee is provided)

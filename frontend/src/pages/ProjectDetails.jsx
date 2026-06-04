@@ -29,6 +29,7 @@ function ProjectDetails() {
   const [taskAssigneeId, setTaskAssigneeId] = useState('');
   const [taskError, setTaskError] = useState('');
   const [taskSubmitting, setTaskSubmitting] = useState(false);
+  const [assignToAll, setAssignToAll] = useState(false); // Bulk assign state
 
   // Member Management Form State
   const [selectedUserId, setSelectedUserId] = useState('');
@@ -84,6 +85,7 @@ function ProjectDetails() {
     setTaskDueDate('');
     setTaskAssigneeId('');
     setTaskError('');
+    setAssignToAll(false);
     setShowTaskModal(true);
   };
 
@@ -97,6 +99,7 @@ function ProjectDetails() {
     setTaskDueDate(task.dueDate ? new Date(task.dueDate).toISOString().substring(0, 10) : '');
     setTaskAssigneeId(task.assigneeId || '');
     setTaskError('');
+    setAssignToAll(false);
     setShowTaskModal(true);
   };
 
@@ -121,7 +124,8 @@ function ProjectDetails() {
         status: taskStatus,
         dueDate: taskDueDate || null,
         projectId: id,
-        assigneeId: taskAssigneeId || null
+        assigneeId: assignToAll ? null : (taskAssigneeId || null),
+        assignToAll: editingTask ? false : assignToAll
       };
 
       const response = await apiFetch(url, {
@@ -585,8 +589,8 @@ function ProjectDetails() {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div className="form-group">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
                   <label htmlFor="taskDueDate">Due Date</label>
                   <input
                     id="taskDueDate"
@@ -597,12 +601,14 @@ function ProjectDetails() {
                   />
                 </div>
 
-                <div className="form-group">
+                <div className="form-group" style={{ marginBottom: 0 }}>
                   <label htmlFor="taskAssignee">Assignee</label>
                   <select
                     id="taskAssignee"
                     className="input-field"
                     value={taskAssigneeId}
+                    disabled={assignToAll}
+                    style={{ opacity: assignToAll ? 0.5 : 1 }}
                     onChange={(e) => setTaskAssigneeId(e.target.value)}
                   >
                     <option value="">Unassigned</option>
@@ -612,6 +618,26 @@ function ProjectDetails() {
                   </select>
                 </div>
               </div>
+
+              {!editingTask && (
+                <div className="form-group" style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <input
+                    id="assignToAll"
+                    type="checkbox"
+                    checked={assignToAll}
+                    onChange={(e) => {
+                      setAssignToAll(e.target.checked);
+                      if (e.target.checked) {
+                        setTaskAssigneeId('');
+                      }
+                    }}
+                    style={{ width: 'auto', cursor: 'pointer', margin: 0 }}
+                  />
+                  <label htmlFor="assignToAll" style={{ margin: 0, cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-main)' }}>
+                    Assign a separate copy of this task to all project members
+                  </label>
+                </div>
+              )}
 
               <div className="flex-align-center" style={{ justifyContent: 'flex-end', gap: '1rem', marginTop: '1.5rem' }}>
                 <button type="button" onClick={() => setShowTaskModal(false)} className="btn btn-secondary">Cancel</button>
