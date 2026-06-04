@@ -1,5 +1,4 @@
 # Team Task Manager
-
 A full-stack, responsive, and visually stunning Team Task Manager web application built with **Node.js/Express**, **React (Vite)**, and **Prisma ORM**. It features a modern glassmorphism design system, role-based access control, an interactive Kanban task board, and statistical progress dashboards.
 
 ---
