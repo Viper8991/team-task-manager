@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LogIn, Mail, Lock, AlertTriangle, Eye, EyeOff, X } from 'lucide-react';
+import { LogIn, Mail, Lock, AlertTriangle, Eye, EyeOff, X, KeyRound } from 'lucide-react';
 
 function Login() {
   const [email, setEmail] = useState('');
@@ -13,7 +13,9 @@ function Login() {
   
   // Forgot Password Reset Modal State
   const [showResetModal, setShowResetModal] = useState(false);
+  const [resetStep, setResetStep] = useState(1); // 1 = enter email, 2 = enter OTP and new password
   const [resetEmail, setResetEmail] = useState('');
+  const [resetCode, setResetCode] = useState('');
   const [resetPassword, setResetPassword] = useState('');
   const [resetConfirmPassword, setResetConfirmPassword] = useState('');
   const [resetError, setResetError] = useState('');
@@ -45,9 +47,40 @@ function Login() {
     }
   };
 
+  const handleSendCode = async (e) => {
+    e.preventDefault();
+    if (!resetEmail) {
+      setResetError('Please enter your email address');
+      return;
+    }
+    try {
+      setResetError('');
+      setResetSuccess('');
+      setResetSubmitting(true);
+      
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: resetEmail })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send reset code');
+      }
+
+      setResetSuccess('Verification code generated! Please check your server console or Railway logs.');
+      setResetStep(2);
+    } catch (err) {
+      setResetError(err.message || 'Something went wrong');
+    } finally {
+      setResetSubmitting(false);
+    }
+  };
+
   const handleResetPassword = async (e) => {
     e.preventDefault();
-    if (!resetEmail || !resetPassword || !resetConfirmPassword) {
+    if (!resetEmail || !resetCode || !resetPassword || !resetConfirmPassword) {
       setResetError('Please fill in all fields');
       return;
     }
@@ -72,7 +105,7 @@ function Login() {
       const response = await fetch('/api/auth/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: resetEmail, password: resetPassword })
+        body: JSON.stringify({ email: resetEmail, code: resetCode, password: resetPassword })
       });
 
       const data = await response.json();
@@ -82,11 +115,13 @@ function Login() {
 
       setResetSuccess('Password reset successful! You can now log in.');
       setResetEmail('');
+      setResetCode('');
       setResetPassword('');
       setResetConfirmPassword('');
       setTimeout(() => {
         setShowResetModal(false);
         setResetSuccess('');
+        setResetStep(1);
       }, 3000);
     } catch (err) {
       setResetError(err.message || 'Something went wrong');
@@ -175,6 +210,7 @@ function Login() {
               type="button"
               onClick={() => {
                 setShowResetModal(true);
+                setResetStep(1);
                 setResetError('');
                 setResetSuccess('');
               }}
@@ -213,7 +249,10 @@ function Login() {
             <div className="modal-header">
               <h3 className="modal-title">Reset Password</h3>
               <button
-                onClick={() => setShowResetModal(false)}
+                onClick={() => {
+                  setShowResetModal(false);
+                  setResetStep(1);
+                }}
                 className="modal-close"
                 style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}
               >
@@ -230,97 +269,150 @@ function Login() {
 
             {resetSuccess && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#10b981', background: 'rgba(16, 185, 129, 0.1)', padding: '0.8rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(16, 185, 129, 0.2)', marginBottom: '1.25rem', fontSize: '0.85rem' }}>
-                <span>{resetSuccess}</span>
+                <span style={{ lineHeight: '1.4' }}>{resetSuccess}</span>
               </div>
             )}
 
-            <form onSubmit={handleResetPassword}>
-              <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-                <label htmlFor="reset-email">Registered Email</label>
-                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                  <Mail size={18} style={{ position: 'absolute', left: '1rem', color: 'var(--text-dim)' }} />
-                  <input
-                    id="reset-email"
-                    type="email"
-                    className="input-field full-width"
-                    placeholder="you@example.com"
-                    value={resetEmail}
-                    onChange={(e) => setResetEmail(e.target.value)}
-                    style={{ paddingLeft: '2.8rem' }}
-                    required
-                  />
+            {resetStep === 1 ? (
+              <form onSubmit={handleSendCode}>
+                <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                  <label htmlFor="reset-email">Registered Email</label>
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    <Mail size={18} style={{ position: 'absolute', left: '1rem', color: 'var(--text-dim)' }} />
+                    <input
+                      id="reset-email"
+                      type="email"
+                      className="input-field full-width"
+                      placeholder="you@example.com"
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      style={{ paddingLeft: '2.8rem' }}
+                      required
+                    />
+                  </div>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem', lineHeight: '1.4' }}>
+                    We'll generate a verification reset code. (For this demo, check your backend console / Railway deployment logs).
+                  </p>
                 </div>
-              </div>
 
-              <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-                <label htmlFor="reset-password">New Password</label>
-                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                  <Lock size={18} style={{ position: 'absolute', left: '1rem', color: 'var(--text-dim)' }} />
-                  <input
-                    id="reset-password"
-                    type={showResetPassword ? 'text' : 'password'}
-                    className="input-field full-width"
-                    placeholder="Min. 8 chars (letters, numbers, symbols)"
-                    value={resetPassword}
-                    onChange={(e) => setResetPassword(e.target.value)}
-                    style={{ paddingLeft: '2.8rem', paddingRight: '2.8rem' }}
-                    required
-                  />
+                <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
                   <button
                     type="button"
-                    onClick={() => setShowResetPassword(!showResetPassword)}
-                    style={{
-                      position: 'absolute',
-                      right: '1rem',
-                      background: 'none',
-                      border: 'none',
-                      color: 'var(--text-dim)',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      padding: 0
-                    }}
+                    onClick={() => setShowResetModal(false)}
+                    className="btn"
+                    style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-main)' }}
                   >
-                    {showResetPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={resetSubmitting}
+                  >
+                    {resetSubmitting ? 'Sending...' : 'Send Reset Code'}
                   </button>
                 </div>
-              </div>
-
-              <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                <label htmlFor="reset-confirm-password">Confirm New Password</label>
-                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                  <Lock size={18} style={{ position: 'absolute', left: '1rem', color: 'var(--text-dim)' }} />
+              </form>
+            ) : (
+              <form onSubmit={handleResetPassword}>
+                <div className="form-group" style={{ marginBottom: '1rem' }}>
+                  <label>Email Address</label>
                   <input
-                    id="reset-confirm-password"
-                    type={showResetPassword ? 'text' : 'password'}
+                    type="text"
                     className="input-field full-width"
-                    placeholder="Confirm new password"
-                    value={resetConfirmPassword}
-                    onChange={(e) => setResetConfirmPassword(e.target.value)}
-                    style={{ paddingLeft: '2.8rem', paddingRight: '2.8rem' }}
-                    required
+                    value={resetEmail}
+                    disabled
+                    style={{ opacity: 0.6 }}
                   />
                 </div>
-              </div>
 
-              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-                <button
-                  type="button"
-                  onClick={() => setShowResetModal(false)}
-                  className="btn"
-                  style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-main)' }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={resetSubmitting}
-                >
-                  {resetSubmitting ? 'Resetting...' : 'Reset Password'}
-                </button>
-              </div>
-            </form>
+                <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                  <label htmlFor="verification-code">Verification Code</label>
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    <KeyRound size={18} style={{ position: 'absolute', left: '1rem', color: 'var(--text-dim)' }} />
+                    <input
+                      id="verification-code"
+                      type="text"
+                      className="input-field full-width"
+                      placeholder="Enter 6-digit code"
+                      value={resetCode}
+                      onChange={(e) => setResetCode(e.target.value)}
+                      style={{ paddingLeft: '2.8rem' }}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                  <label htmlFor="reset-password">New Password</label>
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    <Lock size={18} style={{ position: 'absolute', left: '1rem', color: 'var(--text-dim)' }} />
+                    <input
+                      id="reset-password"
+                      type={showResetPassword ? 'text' : 'password'}
+                      className="input-field full-width"
+                      placeholder="Min. 8 chars (letters, numbers, symbols)"
+                      value={resetPassword}
+                      onChange={(e) => setResetPassword(e.target.value)}
+                      style={{ paddingLeft: '2.8rem', paddingRight: '2.8rem' }}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowResetPassword(!showResetPassword)}
+                      style={{
+                        position: 'absolute',
+                        right: '1rem',
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--text-dim)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: 0
+                      }}
+                    >
+                      {showResetPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                  <label htmlFor="reset-confirm-password">Confirm New Password</label>
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    <Lock size={18} style={{ position: 'absolute', left: '1rem', color: 'var(--text-dim)' }} />
+                    <input
+                      id="reset-confirm-password"
+                      type={showResetPassword ? 'text' : 'password'}
+                      className="input-field full-width"
+                      placeholder="Confirm new password"
+                      value={resetConfirmPassword}
+                      onChange={(e) => setResetConfirmPassword(e.target.value)}
+                      style={{ paddingLeft: '2.8rem', paddingRight: '2.8rem' }}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    onClick={() => setResetStep(1)}
+                    className="btn"
+                    style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-main)' }}
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={resetSubmitting}
+                  >
+                    {resetSubmitting ? 'Resetting...' : 'Reset Password'}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}
