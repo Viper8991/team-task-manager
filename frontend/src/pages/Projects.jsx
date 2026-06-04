@@ -477,7 +477,7 @@ function Projects() {
               </div>
             )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginTop: '0.5rem' }}>
+            <div className="modal-split-layout">
               
               {/* Left Side: Edit Project Details Form */}
               <div>

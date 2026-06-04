@@ -62,7 +62,7 @@ function AdminTeam() {
       </Link>
 
       {/* Header card */}
-      <div className="glass-card" style={{ padding: '2rem', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+      <div className="glass-card responsive-flex-header" style={{ padding: '2rem', marginBottom: '2rem' }}>
         <div className="avatar-circle" style={{ width: '64px', height: '64px', fontSize: '1.8rem', background: 'linear-gradient(135deg, var(--primary) 0%, hsl(290, 80%, 55%) 100%)', color: 'white' }}>
           {adminData.name.charAt(0).toUpperCase()}
         </div>

@@ -170,11 +170,9 @@ function Navbar() {
           {/* Floating Notifications Card */}
           {showNotifications && (
             <div 
+              className="notifications-dropdown"
               style={{ 
                 position: 'absolute', 
-                left: '105%', 
-                bottom: '-50px', 
-                width: '340px', 
                 zIndex: 1000, 
                 maxHeight: '400px', 
                 overflowY: 'auto', 

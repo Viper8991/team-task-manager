@@ -1002,6 +1002,54 @@ select.input-field option {
   }
 }
 
+/* Split layout inside modals (e.g., Edit Project & Team) */
+.modal-split-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .modal-split-layout {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+/* Responsive headers/flex layouts */
+.responsive-flex-header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+@media (max-width: 640px) {
+  .responsive-flex-header {
+    flex-direction: column;
+    text-align: center;
+    align-items: center;
+  }
+}
+
+/* Notifications dropdown responsive positioning */
+.notifications-dropdown {
+  left: 105%;
+  bottom: -50px;
+  width: 340px;
+}
+
+@media (max-width: 768px) {
+  .notifications-dropdown {
+    left: auto;
+    right: 0;
+    top: 100%;
+    bottom: auto;
+    width: 290px;
+    margin-top: 0.5rem;
+  }
+}
+
 /* Mobile & Tablet Sidebar Responsiveness */
 @media (max-width: 768px) {
   .app-container {
@@ -1022,6 +1070,10 @@ select.input-field option {
 
   .sidebar-brand {
     margin-bottom: 0;
+  }
+
+  .nav-title, .brand-subtitle, .sidebar-tasks-per-user {
+    display: none;
   }
 
   .sidebar-links {
@@ -1072,6 +1124,9 @@ select.input-field option {
   }
   .projects-header .btn {
     width: 100%;
+  }
+  .projects-grid {
+    grid-template-columns: 1fr;
   }
   .auth-card {
     padding: 1.5rem;
