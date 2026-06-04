@@ -356,7 +356,7 @@ function ProjectDetails() {
       </div>
 
       {/* Split main layout */}
-      <div style={{ display: 'grid', gridTemplateColumns: '3fr 1fr', gap: '2rem' }}>
+      <div className="project-layout-grid">
         
         {/* Kanban Board Container */}
         <div>
@@ -558,7 +558,7 @@ function ProjectDetails() {
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div className="modal-grid-2">
                 <div className="form-group">
                   <label htmlFor="taskPriority">Priority</label>
                   <select
@@ -589,7 +589,7 @@ function ProjectDetails() {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+              <div className="modal-grid-2" style={{ marginBottom: '1rem' }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label htmlFor="taskDueDate">Due Date</label>
                   <input

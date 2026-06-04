@@ -709,3 +709,83 @@ select.input-field option {
   background-color: var(--bg-main);
   color: var(--text-main);
 }
+
+/* --- Mobile & Tablet Responsiveness System --- */
+
+/* Project Page Split Grid Responsiveness */
+.project-layout-grid {
+  display: grid;
+  grid-template-columns: 3fr 1fr;
+  gap: 2rem;
+}
+
+@media (max-width: 1024px) {
+  .project-layout-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+/* Modal Form Grids Responsiveness */
+.modal-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 480px) {
+  .modal-grid-2 {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+}
+
+/* Navigation Bar Responsiveness */
+@media (max-width: 768px) {
+  .navbar {
+    padding: 0.75rem 1rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  .nav-brand {
+    font-size: 1.15rem;
+  }
+  .nav-links {
+    order: 3;
+    width: 100%;
+    justify-content: space-around;
+    border-top: 1px solid var(--border-color);
+    padding-top: 0.75rem;
+    margin-top: 0.25rem;
+  }
+  .nav-profile {
+    padding-left: 0.5rem;
+    border-left: 1px solid var(--border-color);
+  }
+  .nav-profile .avatar-circle {
+    width: 22px;
+    height: 22px;
+    font-size: 0.7rem;
+  }
+  .nav-profile span {
+    font-size: 0.8rem !important;
+  }
+}
+
+/* Headers and General Adjustments */
+@media (max-width: 640px) {
+  .main-content {
+    padding: 1rem 0.75rem;
+  }
+  .projects-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  .projects-header .btn {
+    width: 100%;
+  }
+  .auth-card {
+    padding: 1.5rem;
+  }
+}
