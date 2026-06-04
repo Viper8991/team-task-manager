@@ -7,11 +7,13 @@ A full-stack, responsive, and visually stunning Team Task Manager web applicatio
 
 *   **Secure Authentication**: Token-based JSON Web Token (JWT) registration and login.
 *   **Role-Based Access Control (RBAC)**:
-    *   **Admin**: Full management capabilities. Can create/delete projects, add/remove team members, create, edit, assign, and delete tasks.
-    *   **Member**: Workspace collaboration. Can browse projects they belong to, see tasks assigned to them, and transition task statuses.
-*   **Interactive Kanban Board**: Status columns (`To Do`, `In Progress`, `Under Review`, `Completed`) with dropdown state selectors.
-*   **Dashboard Visualizations**: aggregates personal metrics, overdue alerts, and completion rate progress bars for all projects.
-*   **Admin Statistics Console**: Special system-wide metric breakdowns for administrators.
+    *   **Admin**: Full project/team controls. Can add/remove members, create/delete projects, and bulk-add all system users.
+    *   **Member**: Workspace collaboration. View projects, task assignments, and update statuses.
+*   **Smart Task Grouping**: Automatically merges duplicate visual cards on the Kanban board under a single card when a task is assigned to multiple members, complete with overlapping user avatar circles.
+*   **Interactive Kanban Board**: Drag-and-drop or select statuses (`To Do`, `In Progress`, `Under Review`, `Completed`) with dynamic progress indicators.
+*   **Live Notifications Drawer**: Instant notifications upon task assignments or team updates, with automatic panel collapse when switching views or navigating.
+*   **Dashboard Visualizations**: Aggregates personal/admin metrics, completion progress bars, and overdue task warnings.
+*   **Mobile-First Responsive Layout**: Collapsible sidebar, clipping-prevention for notifications popover, and single-column form wrapping for tablets/mobile screens.
 *   **Single-Service Deployment**: Configured as a unified service where Express serves the React SPA statically, simplifying deployments and avoiding CORS issues.
 
 ---
