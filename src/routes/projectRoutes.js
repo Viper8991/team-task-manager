@@ -35,6 +35,37 @@ async function checkProjectAccess(req, res, next) {
   }
 }
 
+// Helper: Check if user is either project owner or system admin
+async function checkProjectOwnerOrAdmin(req, res, next) {
+  const { id } = req.params;
+  const userId = req.user.id;
+  const userRole = req.user.role;
+
+  if (userRole === 'ADMIN') {
+    return next();
+  }
+
+  try {
+    const project = await prisma.project.findUnique({
+      where: { id },
+      select: { ownerId: true }
+    });
+
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+
+    if (project.ownerId !== userId) {
+      return res.status(403).json({ error: 'Access denied: Only the project owner or system admin can perform this action' });
+    }
+
+    next();
+  } catch (error) {
+    console.error('Project owner check error:', error);
+    return res.status(500).json({ error: 'Internal server error during owner check' });
+  }
+}
+
 // Get all projects
 router.get('/', authenticateToken, async (req, res) => {
   try {
@@ -125,7 +156,7 @@ router.get('/:id', authenticateToken, checkProjectAccess, async (req, res) => {
   }
 });
 
-// Create a project (Any authenticated user can create; MEMBER creator becomes ADMIN)
+// Create a project (Any authenticated user can create)
 router.post('/', authenticateToken, async (req, res) => {
   const { name, description } = req.body;
 
@@ -134,15 +165,6 @@ router.post('/', authenticateToken, async (req, res) => {
   }
 
   try {
-    // Creator becomes Admin (if they are a Member)
-    if (req.user.role === 'MEMBER') {
-      await prisma.user.update({
-        where: { id: req.user.id },
-        data: { role: 'ADMIN' }
-      });
-      req.user.role = 'ADMIN';
-    }
-
     // Create project and automatically add owner as a member
     const project = await prisma.project.create({
       data: {
@@ -172,8 +194,8 @@ router.post('/', authenticateToken, async (req, res) => {
   }
 });
 
-// Add a member to a project (Admin only)
-router.post('/:id/members', authenticateToken, requireAdmin, async (req, res) => {
+// Add a member to a project (Admin or Project Owner only)
+router.post('/:id/members', authenticateToken, checkProjectOwnerOrAdmin, async (req, res) => {
   const { id } = req.params;
   const { userId } = req.body;
 
@@ -224,8 +246,8 @@ router.post('/:id/members', authenticateToken, requireAdmin, async (req, res) =>
   }
 });
 
-// Remove a member from a project (Admin only)
-router.delete('/:id/members/:userId', authenticateToken, requireAdmin, async (req, res) => {
+// Remove a member from a project (Admin or Project Owner only)
+router.delete('/:id/members/:userId', authenticateToken, checkProjectOwnerOrAdmin, async (req, res) => {
   const { id, userId } = req.params;
 
   try {
@@ -269,8 +291,8 @@ router.delete('/:id/members/:userId', authenticateToken, requireAdmin, async (re
   }
 });
 
-// Delete a project (Admin only)
-router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
+// Delete a project (Admin or Project Owner only)
+router.delete('/:id', authenticateToken, checkProjectOwnerOrAdmin, async (req, res) => {
   const { id } = req.params;
 
   try {

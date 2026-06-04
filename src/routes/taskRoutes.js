@@ -4,8 +4,8 @@ const { authenticateToken, requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Create a task (Admin only)
-router.post('/', authenticateToken, requireAdmin, async (req, res) => {
+// Create a task (Admin or Project Owner only)
+router.post('/', authenticateToken, async (req, res) => {
   const { title, description, priority, status, dueDate, projectId, assigneeId, assignToAll } = req.body;
 
   if (!title || !projectId) {
@@ -20,6 +20,11 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
 
     if (!project) {
       return res.status(404).json({ error: 'Project not found' });
+    }
+
+    // Verify permission: Must be Admin or the Project Owner
+    if (req.user.role !== 'ADMIN' && project.ownerId !== req.user.id) {
+      return res.status(403).json({ error: 'Access denied: Only project owner or system admin can create tasks' });
     }
 
     if (assignToAll) {
@@ -125,7 +130,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Task not found' });
     }
 
-    if (userRole === 'ADMIN') {
+    const isProjectOwner = task.project.ownerId === userId;
+    if (userRole === 'ADMIN' || isProjectOwner) {
       // Validate assignee if it's being updated
       if (assigneeId && assigneeId !== task.assigneeId) {
         const isMember = await prisma.projectMember.findUnique({
@@ -201,17 +207,24 @@ router.put('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// Delete a task (Admin only)
-router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
+// Delete a task (Admin or Project Owner only)
+router.delete('/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
+  const userId = req.user.id;
+  const userRole = req.user.role;
 
   try {
     const task = await prisma.task.findUnique({
-      where: { id }
+      where: { id },
+      include: { project: true }
     });
 
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });
+    }
+
+    if (userRole !== 'ADMIN' && task.project.ownerId !== userId) {
+      return res.status(403).json({ error: 'Access denied: Only project owner or system admin can delete tasks' });
     }
 
     await prisma.task.delete({

@@ -55,8 +55,8 @@ function ProjectDetails() {
       const projData = await projResponse.json();
       setProject(projData);
 
-      // If user is Admin, fetch system users list to allow adding them as members
-      if (user.role === 'ADMIN') {
+      // If user is Admin or project owner, fetch system users list to allow adding them as members
+      if (user.role === 'ADMIN' || projData.ownerId === user.id) {
         const usersResponse = await apiFetch('/api/auth/users');
         if (usersResponse.ok) {
           const usersData = await usersResponse.json();
@@ -330,7 +330,7 @@ function ProjectDetails() {
             </p>
           </div>
 
-          {user.role === 'ADMIN' && (
+          {(user.role === 'ADMIN' || project.ownerId === user.id) && (
             <button onClick={openCreateTaskModal} className="btn btn-primary">
               <Plus size={18} />
               Create Task
@@ -421,8 +421,8 @@ function ProjectDetails() {
               Team Members ({project.members.length})
             </h3>
 
-            {/* User Addition (Admins only) */}
-            {user.role === 'ADMIN' && (
+            {/* User Addition (Admins or Project Owners) */}
+            {(user.role === 'ADMIN' || project.ownerId === user.id) && (
               <form onSubmit={handleAddMember} style={{ marginBottom: '1.5rem', paddingBottom: '1.25rem', borderBottom: '1px solid var(--border-color)' }}>
                 <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>ADD NEW MEMBER</span>
                 {memberError && <div className="text-danger" style={{ fontSize: '0.8rem', marginBottom: '0.5rem' }}>{memberError}</div>}
@@ -472,7 +472,7 @@ function ProjectDetails() {
                       member.user.role === 'ADMIN' && <span className="badge badge-small badge-admin" style={{ fontSize: '0.6rem', padding: '0.05rem 0.3rem' }}>Admin</span>
                     )}
 
-                    {user.role === 'ADMIN' && member.userId !== project.ownerId && (
+                    {(user.role === 'ADMIN' || project.ownerId === user.id) && member.userId !== project.ownerId && (
                       <button 
                         onClick={() => handleRemoveMember(member.userId, member.user.name)} 
                         className="btn" 
@@ -657,8 +657,8 @@ function ProjectDetails() {
     const overdue = isOverdue(task.dueDate, task.status);
     
     // Check if the current user has permission to change this task's status
-    // Admin has permissions for all. Members can ONLY change status of tasks assigned to them.
-    const canChangeStatus = user.role === 'ADMIN' || task.assigneeId === user.id;
+    // Admin or Project Owner has permissions for all. Members can ONLY change status of tasks assigned to them.
+    const canChangeStatus = user.role === 'ADMIN' || project.ownerId === user.id || task.assigneeId === user.id;
 
     return (
       <div key={task.id} className="glass-card task-card">
@@ -668,8 +668,8 @@ function ProjectDetails() {
             {task.priority}
           </span>
 
-          {/* Admin Action Menu */}
-          {user.role === 'ADMIN' && (
+          {/* Admin / Owner Action Menu */}
+          {(user.role === 'ADMIN' || project.ownerId === user.id) && (
             <div className="flex-align-center" style={{ gap: '0.2rem' }}>
               <button 
                 onClick={() => openEditTaskModal(task)} 

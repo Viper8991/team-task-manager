@@ -149,7 +149,7 @@ function Projects() {
                   <Link to={`/projects/${project.id}`} className="title">
                     {project.name}
                   </Link>
-                  {user?.role === 'ADMIN' && (
+                  {(user?.role === 'ADMIN' || project.ownerId === user?.id) && (
                     <button 
                       onClick={() => handleDeleteProject(project.id, project.name)} 
                       className="btn btn-secondary btn-small" 
