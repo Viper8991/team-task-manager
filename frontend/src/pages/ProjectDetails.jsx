@@ -32,9 +32,11 @@ function ProjectDetails() {
   const [assignToAll, setAssignToAll] = useState(false); // Bulk assign state
 
   // Member Management Form State
-  const [selectedUserId, setSelectedUserId] = useState('');
   const [memberError, setMemberError] = useState('');
   const [memberSubmitting, setMemberSubmitting] = useState(false);
+  const [showBulkMemberModal, setShowBulkMemberModal] = useState(false);
+  const [selectedUserIds, setSelectedUserIds] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const fetchData = async () => {
     try {
@@ -205,11 +207,29 @@ function ProjectDetails() {
     }
   };
 
-  // Add Member (Admin only)
-  const handleAddMember = async (e) => {
+  // Bulk Member Assignment Handlers
+  const handleCheckboxChange = (userId) => {
+    setSelectedUserIds(prev => 
+      prev.includes(userId) 
+        ? prev.filter(uid => uid !== userId) 
+        : [...prev, userId]
+    );
+  };
+
+  const handleSelectAllFiltered = (e) => {
+    if (e.target.checked) {
+      const filteredIds = filteredNewMembers.map(u => u.id);
+      setSelectedUserIds(prev => Array.from(new Set([...prev, ...filteredIds])));
+    } else {
+      const filteredIds = filteredNewMembers.map(u => u.id);
+      setSelectedUserIds(prev => prev.filter(id => !filteredIds.includes(id)));
+    }
+  };
+
+  const handleBulkMemberSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedUserId) {
-      setMemberError('Select a user to add');
+    if (selectedUserIds.length === 0) {
+      setMemberError('Select at least one user to add');
       return;
     }
 
@@ -219,20 +239,21 @@ function ProjectDetails() {
 
       const response = await apiFetch(`/api/projects/${id}/members`, {
         method: 'POST',
-        body: JSON.stringify({ userId: selectedUserId })
+        body: JSON.stringify({ userIds: selectedUserIds })
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        setSelectedUserId('');
+        setSelectedUserIds([]);
+        setShowBulkMemberModal(false);
         fetchData(); // Reload details and members list
       } else {
-        setMemberError(data.error || 'Failed to add member');
+        setMemberError(data.error || 'Failed to add member(s)');
       }
     } catch (err) {
       console.error(err);
-      setMemberError('Network error adding member');
+      setMemberError('Network error adding member(s)');
     } finally {
       setMemberSubmitting(false);
     }
@@ -311,6 +332,12 @@ function ProjectDetails() {
   // Filter out system users who are already project members
   const memberUserIds = project.members.map(m => m.userId);
   const potentialNewMembers = systemUsers.filter(u => !memberUserIds.includes(u.id));
+  const filteredNewMembers = potentialNewMembers.filter(u => 
+    u.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    u.email.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  const isAllFilteredSelected = filteredNewMembers.length > 0 && 
+    filteredNewMembers.every(u => selectedUserIds.includes(u.id));
 
   return (
     <div>
@@ -423,32 +450,22 @@ function ProjectDetails() {
 
             {/* User Addition (Admins or Project Owners) */}
             {(user.role === 'ADMIN' || project.ownerId === user.id) && (
-              <form onSubmit={handleAddMember} style={{ marginBottom: '1.5rem', paddingBottom: '1.25rem', borderBottom: '1px solid var(--border-color)' }}>
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>ADD NEW MEMBER</span>
+              <div style={{ marginBottom: '1.5rem', paddingBottom: '1.25rem', borderBottom: '1px solid var(--border-color)' }}>
                 {memberError && <div className="text-danger" style={{ fontSize: '0.8rem', marginBottom: '0.5rem' }}>{memberError}</div>}
-                
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <select 
-                    value={selectedUserId} 
-                    onChange={(e) => setSelectedUserId(e.target.value)} 
-                    className="input-field" 
-                    style={{ flex: 1, padding: '0.5rem', fontSize: '0.85rem' }}
-                  >
-                    <option value="">Select User...</option>
-                    {potentialNewMembers.map(u => (
-                      <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
-                    ))}
-                  </select>
-                  <button 
-                    type="submit" 
-                    className="btn btn-primary" 
-                    style={{ padding: '0.5rem 0.8rem' }}
-                    disabled={memberSubmitting || !selectedUserId}
-                  >
-                    <UserPlus size={16} />
-                  </button>
-                </div>
-              </form>
+                <button 
+                  onClick={() => {
+                    setSelectedUserIds([]);
+                    setSearchQuery('');
+                    setMemberError('');
+                    setShowBulkMemberModal(true);
+                  }}
+                  className="btn btn-primary full-width"
+                  style={{ gap: '0.5rem', fontSize: '0.9rem', padding: '0.6rem' }}
+                >
+                  <UserPlus size={16} />
+                  Add Team Members
+                </button>
+              </div>
             )}
 
             {/* Members Directory */}
@@ -646,6 +663,127 @@ function ProjectDetails() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Member Assignment Modal */}
+      {showBulkMemberModal && (
+        <div className="modal-overlay">
+          <div className="glass-card modal-content" style={{ maxWidth: '500px' }}>
+            <div className="modal-header">
+              <h3 className="modal-title">Add Team Members</h3>
+              <button onClick={() => setShowBulkMemberModal(false)} className="modal-close"><X size={20} /></button>
+            </div>
+
+            {memberError && (
+              <div className="flex-align-center text-danger" style={{ background: 'var(--color-danger-bg)', padding: '0.8rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(239,68,68,0.2)', marginBottom: '1.25rem', fontSize: '0.85rem' }}>
+                <AlertTriangle size={18} style={{ flexShrink: 0 }} />
+                <span>{memberError}</span>
+              </div>
+            )}
+
+            <div style={{ marginBottom: '1rem' }}>
+              <input
+                type="text"
+                placeholder="Search users by name or email..."
+                className="input-field full-width"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{ padding: '0.6rem 1rem', fontSize: '0.9rem' }}
+              />
+            </div>
+
+            {/* Select All */}
+            {filteredNewMembers.length > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.25rem', borderBottom: '1px solid var(--border-color)', marginBottom: '0.5rem' }}>
+                <input
+                  type="checkbox"
+                  id="selectAllMembers"
+                  checked={isAllFilteredSelected}
+                  onChange={handleSelectAllFiltered}
+                  style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                />
+                <label htmlFor="selectAllMembers" style={{ cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', margin: 0 }}>
+                  Select All ({filteredNewMembers.length} filtered)
+                </label>
+              </div>
+            )}
+
+            {/* Scrollable List */}
+            <div style={{ maxHeight: '250px', overflowY: 'auto', paddingRight: '0.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', margin: '0.5rem 0' }}>
+              {filteredNewMembers.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                  {potentialNewMembers.length === 0 ? 'All users are already members of this project.' : 'No matching users found.'}
+                </div>
+              ) : (
+                filteredNewMembers.map(u => {
+                  const isChecked = selectedUserIds.includes(u.id);
+                  return (
+                    <label 
+                      key={u.id}
+                      style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '0.75rem', 
+                        padding: '0.5rem 0.75rem', 
+                        borderRadius: 'var(--radius-md)', 
+                        background: isChecked ? 'rgba(139, 92, 246, 0.08)' : 'rgba(0, 0, 0, 0.01)',
+                        border: isChecked ? '1px solid rgba(139, 92, 246, 0.25)' : '1px solid transparent',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => handleCheckboxChange(u.id)}
+                        style={{ width: '16px', height: '16px', cursor: 'pointer', flexShrink: 0 }}
+                      />
+                      <div className="avatar-circle" style={{ width: '28px', height: '28px', fontSize: '0.8rem', flexShrink: 0 }}>
+                        {u.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 500, display: 'block', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                          {u.name}
+                        </span>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', display: 'block', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                          {u.email}
+                        </span>
+                      </div>
+                      <span className="badge badge-small badge-member" style={{ fontSize: '0.65rem', flexShrink: 0 }}>
+                        {u.role}
+                      </span>
+                    </label>
+                  );
+                })
+              )}
+            </div>
+
+            <div className="flex-align-center" style={{ justifyContent: 'space-between', gap: '1rem', marginTop: '1.5rem', borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                {selectedUserIds.length} user(s) selected
+              </span>
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button 
+                  type="button" 
+                  onClick={() => setShowBulkMemberModal(false)} 
+                  className="btn btn-secondary btn-small"
+                  style={{ padding: '0.5rem 1rem' }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button"
+                  onClick={handleBulkMemberSubmit}
+                  className="btn btn-primary btn-small"
+                  disabled={memberSubmitting || selectedUserIds.length === 0}
+                  style={{ padding: '0.5rem 1rem' }}
+                >
+                  {memberSubmitting ? 'Adding...' : `Add Selected`}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

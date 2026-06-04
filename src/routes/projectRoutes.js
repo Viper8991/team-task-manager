@@ -194,13 +194,20 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
-// Add a member to a project (Admin or Project Owner only)
+// Add a member (or multiple members) to a project (Admin or Project Owner only)
 router.post('/:id/members', authenticateToken, checkProjectOwnerOrAdmin, async (req, res) => {
   const { id } = req.params;
-  const { userId } = req.body;
+  const { userId, userIds } = req.body;
 
-  if (!userId) {
-    return res.status(400).json({ error: 'User ID is required' });
+  let idsToAdd = [];
+  if (userId) {
+    idsToAdd.push(userId);
+  } else if (Array.isArray(userIds)) {
+    idsToAdd = userIds;
+  }
+
+  if (idsToAdd.length === 0) {
+    return res.status(400).json({ error: 'User ID or User IDs array is required' });
   }
 
   try {
@@ -213,36 +220,48 @@ router.post('/:id/members', authenticateToken, checkProjectOwnerOrAdmin, async (
       return res.status(404).json({ error: 'Project not found' });
     }
 
-    // Check if user exists
-    const userExists = await prisma.user.findUnique({
-      where: { id: userId }
-    });
-
-    if (!userExists) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    // Add to project
-    const member = await prisma.projectMember.create({
-      data: {
+    // Filter out users already in project
+    const existingMembers = await prisma.projectMember.findMany({
+      where: {
         projectId: id,
-        userId: userId
+        userId: { in: idsToAdd }
       },
-      include: {
-        user: {
-          select: { id: true, name: true, email: true, role: true }
-        }
-      }
+      select: { userId: true }
+    });
+    const existingUserIds = existingMembers.map(m => m.userId);
+    const newUserIds = idsToAdd.filter(uid => !existingUserIds.includes(uid));
+
+    if (newUserIds.length === 0) {
+      return res.status(400).json({ error: 'All selected users are already members of this project' });
+    }
+
+    // Check if users exist in the database
+    const validUsers = await prisma.user.findMany({
+      where: { id: { in: newUserIds } },
+      select: { id: true }
+    });
+    const validUserIds = validUsers.map(u => u.id);
+
+    if (validUserIds.length === 0) {
+      return res.status(404).json({ error: 'No valid users found to add' });
+    }
+
+    // Add them using createMany (supported by SQLite in modern Prisma)
+    await prisma.projectMember.createMany({
+      data: validUserIds.map(uid => ({
+        projectId: id,
+        userId: uid
+      }))
     });
 
-    return res.status(201).json(member);
+    // Return the count and status
+    return res.status(201).json({
+      message: `${validUserIds.length} member(s) added successfully`,
+      addedCount: validUserIds.length
+    });
   } catch (error) {
-    // Handle unique constraint (user already in project)
-    if (error.code === 'P2002') {
-      return res.status(400).json({ error: 'User is already a member of this project' });
-    }
-    console.error('Error adding member:', error);
-    return res.status(500).json({ error: 'Failed to add member to project' });
+    console.error('Error adding member(s):', error);
+    return res.status(500).json({ error: 'Failed to add member(s) to project' });
   }
 });
 
