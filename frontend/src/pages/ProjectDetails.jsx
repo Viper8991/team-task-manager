@@ -321,7 +321,6 @@ function ProjectDetails() {
   const tasksByColumn = {
     TODO: project.tasks.filter(t => t.status === 'TODO'),
     IN_PROGRESS: project.tasks.filter(t => t.status === 'IN_PROGRESS'),
-    REVIEW: project.tasks.filter(t => t.status === 'REVIEW'),
     COMPLETED: project.tasks.filter(t => t.status === 'COMPLETED')
   };
 
@@ -376,7 +375,7 @@ function ProjectDetails() {
               <div className="progress-bar-fill" style={{ width: `${percentComplete}%` }}></div>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.3rem' }}>
-              <span>{completedTasks} of {totalTasks} Tasks completed</span>
+              <span>{completedTasks} of {totalTasks} Tasks Done</span>
             </div>
           </div>
         </div>
@@ -413,21 +412,10 @@ function ProjectDetails() {
               </div>
             </div>
 
-            {/* COLUMN: REVIEW */}
-            <div className="board-column">
-              <div className="column-header review">
-                <span className="column-title"><CheckSquare size={16} style={{ color: 'var(--color-review)' }} /> Under Review</span>
-                <span className="column-count">{tasksByColumn.REVIEW.length}</span>
-              </div>
-              <div className="column-tasks">
-                {tasksByColumn.REVIEW.map(task => renderTaskCard(task))}
-              </div>
-            </div>
-
             {/* COLUMN: COMPLETED */}
             <div className="board-column">
               <div className="column-header completed">
-                <span className="column-title"><CheckSquare size={16} style={{ color: 'var(--color-completed)' }} /> Completed</span>
+                <span className="column-title"><CheckSquare size={16} style={{ color: 'var(--color-completed)' }} /> Done</span>
                 <span className="column-count">{tasksByColumn.COMPLETED.length}</span>
               </div>
               <div className="column-tasks">
@@ -600,8 +588,7 @@ function ProjectDetails() {
                   >
                     <option value="TODO">TO DO</option>
                     <option value="IN_PROGRESS">IN PROGRESS</option>
-                    <option value="REVIEW">UNDER REVIEW</option>
-                    <option value="COMPLETED">COMPLETED</option>
+                    <option value="COMPLETED">DONE</option>
                   </select>
                 </div>
               </div>
@@ -868,8 +855,7 @@ function ProjectDetails() {
             >
               <option value="TODO">TO DO</option>
               <option value="IN_PROGRESS">IN PROGRESS</option>
-              <option value="REVIEW">REVIEW</option>
-              <option value="COMPLETED">COMPLETED</option>
+              <option value="COMPLETED">DONE</option>
             </select>
           </div>
 

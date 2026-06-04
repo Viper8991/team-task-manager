@@ -173,7 +173,12 @@ function Dashboard() {
                 <Users size={28} style={{ color: 'var(--primary)', opacity: 0.7 }} />
               </div>
             </div>
-            <div className="glass-card stat-card interactive">
+            <div 
+              className="glass-card stat-card interactive"
+              onClick={() => navigate('/projects')}
+              style={{ cursor: 'pointer' }}
+              title="Click to view all projects"
+            >
               <span className="label">Total Projects</span>
               <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
                 <span className="value">{adminStats.totalProjects}</span>
@@ -188,7 +193,7 @@ function Dashboard() {
               </div>
             </div>
             <div className="glass-card stat-card interactive">
-              <span className="label">Completed Tasks</span>
+              <span className="label">Tasks Done</span>
               <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
                 <span className="value">{adminStats.statusBreakdown.COMPLETED}</span>
                 <CheckCircle size={28} style={{ color: 'var(--color-completed)', opacity: 0.7 }} />
@@ -219,7 +224,7 @@ function Dashboard() {
           </div>
         </div>
         <div className="glass-card stat-card">
-          <span className="label">Completed</span>
+          <span className="label">Done</span>
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
             <span className="value">{personalStats.completedCount}</span>
             <CheckCircle size={28} style={{ color: 'var(--color-completed)', opacity: 0.7 }} />
@@ -294,7 +299,7 @@ function Dashboard() {
                       <div className="progress-bar-fill" style={{ width: `${proj.percentComplete}%` }}></div>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'flex-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-                      <span>{proj.completedTasks} / {proj.totalTasks} Tasks Completed</span>
+                      <span>{proj.completedTasks} / {proj.totalTasks} Tasks Done</span>
                       <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '2px' }}>
                         View Board <ChevronRight size={12} />
                       </span>
@@ -337,28 +342,7 @@ function Dashboard() {
             </div>
           </div>
 
-          {/* Admin: Tasks per User Widget */}
-          {user?.role === 'ADMIN' && adminStats?.tasksPerUser && (
-            <div className="glass-card" style={{ marginTop: '2rem' }}>
-              <h3 style={{ fontSize: '1.2rem', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Users size={18} style={{ color: 'var(--primary)' }} />
-                Tasks per User
-              </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {adminStats.tasksPerUser.map(item => (
-                  <div key={item.id} className="flex-between" style={{ padding: '0.75rem', background: 'rgba(0, 0, 0, 0.2)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{item.name}</span>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{item.role}</span>
-                    </div>
-                    <span className="badge badge-todo" style={{ fontWeight: 700 }}>
-                      {item.taskCount} {item.taskCount === 1 ? 'task' : 'tasks'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+
         </div>
       </div>
 
