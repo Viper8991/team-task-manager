@@ -239,110 +239,73 @@ function Dashboard() {
         </div>
       </div>
 
-      <div className="dashboard-sections">
-        {/* Left column: Projects progress and Overdue alarms */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          {/* Overdue Alert Widget */}
-          {personalStats.overdueCount > 0 && (
-            <div className="glass-card" style={{ borderLeft: '4px solid var(--color-danger)', background: 'rgba(239, 68, 68, 0.05)' }}>
-              <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-danger)', fontSize: '1.1rem' }}>
-                <AlertCircle size={20} />
-                Action Required: Overdue Tasks
-              </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
-                {personalStats.overdueTasks.map(task => (
-                  <div key={task.id} className="flex-between" style={{ padding: '0.75rem', background: 'rgba(0, 0, 0, 0.2)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(239, 68, 68, 0.1)' }}>
-                    <span style={{ fontWeight: 500, fontSize: '0.95rem' }}>{task.title}</span>
-                    <span className="flex-align-center text-danger" style={{ fontSize: '0.8rem', fontWeight: 600 }}>
-                      <Calendar size={14} />
-                      Due: {formatDate(task.dueDate)}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+        {/* Overdue Alert Widget */}
+        {personalStats.overdueCount > 0 && (
+          <div className="glass-card" style={{ borderLeft: '4px solid var(--color-danger)', background: 'rgba(239, 68, 68, 0.05)' }}>
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-danger)', fontSize: '1.1rem' }}>
+              <AlertCircle size={20} />
+              Action Required: Overdue Tasks
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
+              {personalStats.overdueTasks.map(task => (
+                <div key={task.id} className="flex-between" style={{ padding: '0.75rem', background: 'rgba(0, 0, 0, 0.2)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(239, 68, 68, 0.1)' }}>
+                  <span style={{ fontWeight: 500, fontSize: '0.95rem' }}>{task.title}</span>
+                  <span className="flex-align-center text-danger" style={{ fontSize: '0.8rem', fontWeight: 600 }}>
+                    <Calendar size={14} />
+                    Due: {formatDate(task.dueDate)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Project Progress tracking */}
+        <div className="glass-card">
+          <h3 style={{ fontSize: '1.2rem', marginBottom: '1.25rem' }}>Active Projects Progress</h3>
+          {projectsOverview.length === 0 ? (
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+              You are not associated with any active projects.
+              {user?.role === 'ADMIN' && (
+                <div style={{ marginTop: '1rem' }}>
+                  <Link to="/projects" className="btn btn-secondary btn-small">Create your first Project</Link>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              {projectsOverview.map(proj => (
+                <div 
+                  key={proj.id} 
+                  className="pointer" 
+                  onClick={() => navigate(`/projects/${proj.id}`)}
+                  style={{ padding: '1rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', transition: 'border-color var(--transition-fast)' }}
+                  onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--border-color-hover)'}
+                  onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-color)'}
+                >
+                  <div className="flex-between" style={{ marginBottom: '0.5rem' }}>
+                    <span style={{ fontWeight: 600, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <Folder size={16} style={{ color: 'var(--primary)' }} />
+                      {proj.name}
+                    </span>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--primary)' }}>
+                      {proj.percentComplete}%
                     </span>
                   </div>
-                ))}
-              </div>
+                  <div className="progress-bar-container">
+                    <div className="progress-bar-fill" style={{ width: `${proj.percentComplete}%` }}></div>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+                    <span>{proj.completedTasks} / {proj.totalTasks} Tasks Done</span>
+                    <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                      View Board <ChevronRight size={12} />
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
-
-          {/* Project Progress tracking */}
-          <div className="glass-card">
-            <h3 style={{ fontSize: '1.2rem', marginBottom: '1.25rem' }}>Active Projects Progress</h3>
-            {projectsOverview.length === 0 ? (
-              <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                You are not associated with any active projects.
-                {user?.role === 'ADMIN' && (
-                  <div style={{ marginTop: '1rem' }}>
-                    <Link to="/projects" className="btn btn-secondary btn-small">Create your first Project</Link>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                {projectsOverview.map(proj => (
-                  <div 
-                    key={proj.id} 
-                    className="pointer" 
-                    onClick={() => navigate(`/projects/${proj.id}`)}
-                    style={{ padding: '1rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', transition: 'border-color var(--transition-fast)' }}
-                    onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--border-color-hover)'}
-                    onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-color)'}
-                  >
-                    <div className="flex-between" style={{ marginBottom: '0.5rem' }}>
-                      <span style={{ fontWeight: 600, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <Folder size={16} style={{ color: 'var(--primary)' }} />
-                        {proj.name}
-                      </span>
-                      <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--primary)' }}>
-                        {proj.percentComplete}%
-                      </span>
-                    </div>
-                    <div className="progress-bar-container">
-                      <div className="progress-bar-fill" style={{ width: `${proj.percentComplete}%` }}></div>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'flex-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-                      <span>{proj.completedTasks} / {proj.totalTasks} Tasks Done</span>
-                      <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '2px' }}>
-                        View Board <ChevronRight size={12} />
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Right column: Quick Profile / Task focus */}
-        <div>
-          <div className="glass-card">
-            <h3 style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>My Profile Details</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border-color)' }}>
-                <div className="avatar-circle" style={{ width: '48px', height: '48px', fontSize: '1.4rem' }}>
-                  {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
-                </div>
-                <div>
-                  <h4 style={{ fontSize: '1.1rem' }}>{user?.name}</h4>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{user?.email}</span>
-                </div>
-              </div>
-              
-              <div className="flex-between" style={{ fontSize: '0.9rem' }}>
-                <span style={{ color: 'var(--text-muted)' }}>Access Role</span>
-                <span className={`badge ${user?.role === 'ADMIN' ? 'badge-admin' : 'badge-member'}`}>
-                  {user?.role}
-                </span>
-              </div>
-              <div className="flex-between" style={{ fontSize: '0.9rem' }}>
-                <span style={{ color: 'var(--text-muted)' }}>Working Status</span>
-                <span className="flex-align-center" style={{ color: 'var(--color-completed)', fontWeight: 600 }}>
-                  <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-completed)' }}></span>
-                  Active
-                </span>
-              </div>
-            </div>
-          </div>
-
-
         </div>
       </div>
 

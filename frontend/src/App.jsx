@@ -7,6 +7,8 @@ import Dashboard from './pages/Dashboard';
 import Projects from './pages/Projects';
 import ProjectDetails from './pages/ProjectDetails';
 import Navbar from './components/Navbar';
+import Profile from './pages/Profile';
+import AdminTeam from './pages/AdminTeam';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }) => {
@@ -64,6 +66,8 @@ function AppLayout() {
       <main className="main-content">
         <Routes>
           <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/admin-team/:adminId" element={<ProtectedRoute><AdminTeam /></ProtectedRoute>} />
           <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
           <Route path="/projects/:id" element={<ProtectedRoute><ProjectDetails /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />

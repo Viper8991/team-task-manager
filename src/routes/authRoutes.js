@@ -185,4 +185,86 @@ router.post('/admin-reset-password', authenticateToken, async (req, res) => {
   }
 });
 
+// Get admins with their grouped members and member counts (for Admin Teams view)
+router.get('/admins-members', authenticateToken, async (req, res) => {
+  try {
+    const admins = await prisma.user.findMany({
+      where: { role: 'ADMIN' },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true
+      }
+    });
+
+    const adminsWithMembers = await Promise.all(admins.map(async (admin) => {
+      // Find projects owned by this admin
+      const projects = await prisma.project.findMany({
+        where: { ownerId: admin.id },
+        select: { id: true }
+      });
+      const projectIds = projects.map(p => p.id);
+
+      if (projectIds.length === 0) {
+        return {
+          ...admin,
+          memberCount: 0,
+          members: []
+        };
+      }
+
+      // Find all unique project members in projects owned by this admin
+      const memberships = await prisma.projectMember.findMany({
+        where: { projectId: { in: projectIds } },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true
+            }
+          }
+        }
+      });
+
+      // Filter to get unique member users
+      const memberMap = new Map();
+      memberships.forEach(m => {
+        if (m.user.id !== admin.id && !memberMap.has(m.user.id)) {
+          memberMap.set(m.user.id, m.user);
+        }
+      });
+
+      const uniqueMembers = Array.from(memberMap.values());
+
+      // Fetch task count for each unique member in the projects owned by this admin
+      const membersWithTaskCount = await Promise.all(uniqueMembers.map(async (member) => {
+        const taskCount = await prisma.task.count({
+          where: {
+            assigneeId: member.id,
+            projectId: { in: projectIds }
+          }
+        });
+        return {
+          ...member,
+          taskCount
+        };
+      }));
+
+      return {
+        ...admin,
+        memberCount: membersWithTaskCount.length,
+        members: membersWithTaskCount
+      };
+    }));
+
+    return res.json(adminsWithMembers);
+  } catch (error) {
+    console.error('Error fetching admins and members:', error);
+    return res.status(500).json({ error: 'Failed to fetch admins and members list' });
+  }
+});
+
 module.exports = router;

@@ -63,6 +63,15 @@ router.post('/', authenticateToken, async (req, res) => {
         )
       );
 
+      // Create notifications for all assigned members
+      await prisma.notification.createMany({
+        data: members.map(m => ({
+          userId: m.userId,
+          title: 'New Task Assigned',
+          message: `You have been assigned the task "${title}" in project "${project.name}"`
+        }))
+      });
+
       return res.status(201).json(tasks[0]);
     }
 
@@ -102,6 +111,16 @@ router.post('/', authenticateToken, async (req, res) => {
         }
       }
     });
+
+    if (assigneeId) {
+      await prisma.notification.create({
+        data: {
+          userId: assigneeId,
+          title: 'New Task Assigned',
+          message: `You have been assigned the task "${title}" in project "${project.name}"`
+        }
+      });
+    }
 
     return res.status(201).json(task);
   } catch (error) {
@@ -168,6 +187,16 @@ router.put('/:id', authenticateToken, async (req, res) => {
           }
         }
       });
+
+      if (assigneeId && assigneeId !== task.assigneeId) {
+        await prisma.notification.create({
+          data: {
+            userId: assigneeId,
+            title: 'Task Assigned to You',
+            message: `The task "${updatedTask.title}" in project "${task.project.name}" has been assigned to you.`
+          }
+        });
+      }
 
       return res.json(updatedTask);
     } else {

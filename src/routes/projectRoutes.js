@@ -254,6 +254,15 @@ router.post('/:id/members', authenticateToken, checkProjectOwnerOrAdmin, async (
       }))
     });
 
+    // Create notifications for each successfully added user
+    await prisma.notification.createMany({
+      data: validUserIds.map(uid => ({
+        userId: uid,
+        title: 'Assigned to Project',
+        message: `You have been added to the project "${project.name}"`
+      }))
+    });
+
     // Return the count and status
     return res.status(201).json({
       message: `${validUserIds.length} member(s) added successfully`,
@@ -307,6 +316,36 @@ router.delete('/:id/members/:userId', authenticateToken, checkProjectOwnerOrAdmi
   } catch (error) {
     console.error('Error removing member:', error);
     return res.status(500).json({ error: 'Failed to remove member from project' });
+  }
+});
+
+// Update project details (Admin or Project Owner only)
+router.put('/:id', authenticateToken, checkProjectOwnerOrAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { name, description } = req.body;
+
+  if (!name) {
+    return res.status(400).json({ error: 'Project name is required' });
+  }
+
+  try {
+    const updatedProject = await prisma.project.update({
+      where: { id },
+      data: { name, description },
+      include: {
+        owner: {
+          select: { id: true, name: true, email: true }
+        },
+        _count: {
+          select: { members: true, tasks: true }
+        }
+      }
+    });
+
+    return res.json(updatedProject);
+  } catch (error) {
+    console.error('Error updating project:', error);
+    return res.status(500).json({ error: 'Failed to update project' });
   }
 });
 
