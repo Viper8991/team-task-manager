@@ -38,7 +38,7 @@ const AdminRoute = ({ children }) => {
 
   if (loading) return null;
 
-  if (!user || user.role !== 'ADMIN') {
+  if (!user || (user.role !== 'ADMIN' && user.role !== 'SUPERADMIN')) {
     return <Navigate to="/" replace />;
   }
 

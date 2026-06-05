@@ -25,6 +25,91 @@ function Dashboard() {
   const [resetSuccess, setResetSuccess] = useState('');
   const [resetSubmitting, setResetSubmitting] = useState(false);
 
+  // Superadmin Role Assignment State
+  const [pendingRoles, setPendingRoles] = useState([]);
+  const [assignEmail, setAssignEmail] = useState('');
+  const [assignRole, setAssignRole] = useState('MEMBER');
+  const [assignSubmitting, setAssignSubmitting] = useState(false);
+  const [assignError, setAssignError] = useState('');
+  const [assignSuccess, setAssignSuccess] = useState('');
+
+  const fetchPendingRoles = async () => {
+    if (user?.role !== 'SUPERADMIN') return;
+    try {
+      const response = await apiFetch('/api/auth/pending-roles');
+      if (response.ok) {
+        const list = await response.json();
+        setPendingRoles(list);
+      }
+    } catch (err) {
+      console.error('Error fetching pending roles:', err);
+    }
+  };
+
+  const handleAssignRole = async (e, directEmail = null, directRole = null) => {
+    if (e) e.preventDefault();
+    
+    const emailToAssign = directEmail || assignEmail;
+    const roleToAssign = directRole || assignRole;
+
+    if (!emailToAssign) {
+      setAssignError('Email is required');
+      return;
+    }
+
+    try {
+      setAssignError('');
+      setAssignSuccess('');
+      setAssignSubmitting(true);
+
+      const response = await apiFetch('/api/auth/assign-role', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailToAssign, role: roleToAssign })
+      });
+
+      const resData = await response.json();
+      if (!response.ok) {
+        throw new Error(resData.error || 'Failed to assign role');
+      }
+
+      setAssignSuccess(resData.message || 'Successfully updated role assignment!');
+      if (!directEmail) {
+        setAssignEmail('');
+      }
+
+      // Re-fetch users and pending roles
+      const usersResponse = await apiFetch('/api/auth/users');
+      if (usersResponse.ok) {
+        const usersList = await usersResponse.json();
+        setSystemUsers(usersList);
+      }
+      await fetchPendingRoles();
+    } catch (err) {
+      console.error(err);
+      setAssignError(err.message || 'Failed to assign role');
+    } finally {
+      setAssignSubmitting(false);
+    }
+  };
+
+  const handleDeletePendingRole = async (id) => {
+    try {
+      const response = await apiFetch(`/api/auth/pending-roles/${id}`, {
+        method: 'DELETE'
+      });
+      if (response.ok) {
+        await fetchPendingRoles();
+      } else {
+        const resData = await response.json();
+        alert(resData.error || 'Failed to delete pending role assignment');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error deleting pending role');
+    }
+  };
+
   const handleAdminResetPassword = async (e) => {
     e.preventDefault();
     if (!targetResetUser || !resetNewPassword) {
@@ -73,6 +158,8 @@ function Dashboard() {
 
   const handleOpenUsersModal = async () => {
     setShowUsersModal(true);
+    setAssignError('');
+    setAssignSuccess('');
     try {
       setLoadingUsers(true);
       const response = await apiFetch('/api/auth/users');
@@ -80,6 +167,7 @@ function Dashboard() {
         const usersList = await response.json();
         setSystemUsers(usersList);
       }
+      await fetchPendingRoles();
     } catch (err) {
       console.error('Error fetching system users:', err);
     } finally {
@@ -154,7 +242,7 @@ function Dashboard() {
       </div>
 
       {/* Admin Panel Metrics */}
-      {user?.role === 'ADMIN' && adminStats && (
+      {(user?.role === 'ADMIN' || user?.role === 'SUPERADMIN') && adminStats && (
         <div style={{ marginBottom: '2.5rem' }}>
           <h3 style={{ fontSize: '1.1rem', color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: 'var(--primary)' }}></span>
@@ -267,7 +355,7 @@ function Dashboard() {
           {projectsOverview.length === 0 ? (
             <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
               You are not associated with any active projects.
-              {user?.role === 'ADMIN' && (
+              {(user?.role === 'ADMIN' || user?.role === 'SUPERADMIN') && (
                 <div style={{ marginTop: '1rem' }}>
                   <Link to="/projects" className="btn btn-secondary btn-small">Create your first Project</Link>
                 </div>
@@ -312,7 +400,7 @@ function Dashboard() {
       {/* Users Modal */}
       {showUsersModal && (
         <div className="modal-overlay" onClick={() => setShowUsersModal(false)}>
-          <div className="glass-card modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+          <div className="glass-card modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px', width: '90%' }}>
             <div className="modal-header">
               <h3 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Users size={22} style={{ color: 'var(--primary)' }} />
@@ -321,12 +409,55 @@ function Dashboard() {
               <button onClick={() => setShowUsersModal(false)} className="modal-close"><X size={20} /></button>
             </div>
 
+            {/* Role Assignment Form for SUPERADMIN */}
+            {user?.role === 'SUPERADMIN' && (
+              <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}>
+                <h4 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.75rem' }}>Assign Role by Email</h4>
+                
+                {assignError && (
+                  <div style={{ fontSize: '0.8rem', color: 'var(--color-danger)', marginBottom: '0.5rem' }}>{assignError}</div>
+                )}
+                {assignSuccess && (
+                  <div style={{ fontSize: '0.8rem', color: '#10b981', marginBottom: '0.5rem' }}>{assignSuccess}</div>
+                )}
+
+                <form onSubmit={handleAssignRole} style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <input
+                    type="email"
+                    placeholder="Enter email address..."
+                    className="input-field"
+                    value={assignEmail}
+                    onChange={(e) => setAssignEmail(e.target.value)}
+                    style={{ flex: 2, minWidth: '150px', padding: '0.4rem 0.6rem', fontSize: '0.85rem', height: '34px' }}
+                    required
+                  />
+                  <select
+                    className="input-field"
+                    value={assignRole}
+                    onChange={(e) => setAssignRole(e.target.value)}
+                    style={{ flex: 1, minWidth: '100px', padding: '0.4rem', fontSize: '0.85rem', height: '34px' }}
+                  >
+                    <option value="MEMBER">MEMBER</option>
+                    <option value="ADMIN">ADMIN</option>
+                  </select>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={assignSubmitting}
+                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', height: '34px' }}
+                  >
+                    Assign
+                  </button>
+                </form>
+              </div>
+            )}
+ 
             {loadingUsers ? (
               <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
                 Loading workspace members...
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', maxHeight: '350px', overflowY: 'auto', paddingRight: '0.25rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', maxHeight: '300px', overflowY: 'auto', paddingRight: '0.25rem' }}>
                 {systemUsers.map(u => (
                   <div key={u.id} className="flex-between" style={{ padding: '0.75rem 1rem', background: 'rgba(0, 0, 0, 0.2)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -338,12 +469,35 @@ function Dashboard() {
                         <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{u.email}</span>
                       </div>
                     </div>
-                    
+                     
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <span className={`badge ${u.role === 'ADMIN' ? 'badge-admin' : 'badge-member'}`} style={{ fontSize: '0.7rem' }}>
-                        {u.role}
-                      </span>
-                      {user?.role === 'ADMIN' && (
+                      {user?.role === 'SUPERADMIN' && u.role !== 'SUPERADMIN' ? (
+                        <select
+                          value={u.role}
+                          onChange={(e) => handleAssignRole(null, u.email, e.target.value)}
+                          className="input-field badge-small"
+                          style={{
+                            padding: '0.1rem 1.5rem 0.1rem 0.4rem',
+                            fontSize: '0.7rem',
+                            height: 'auto',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            backgroundPosition: 'right 0.4rem center',
+                            borderColor: 'transparent',
+                            backgroundColor: 'rgba(255,255,255,0.05)',
+                            color: u.role === 'ADMIN' ? 'var(--primary)' : 'var(--text-muted)'
+                          }}
+                        >
+                          <option value="MEMBER">MEMBER</option>
+                          <option value="ADMIN">ADMIN</option>
+                        </select>
+                      ) : (
+                        <span className={`badge ${u.role === 'SUPERADMIN' ? 'badge-superadmin' : (u.role === 'ADMIN' ? 'badge-admin' : 'badge-member')}`} style={{ fontSize: '0.7rem' }}>
+                          {u.role}
+                        </span>
+                      )}
+                      
+                      {(user?.role === 'ADMIN' || user?.role === 'SUPERADMIN') && (
                         <button
                           onClick={() => {
                             setTargetResetUser(u);
@@ -365,7 +519,39 @@ function Dashboard() {
                 ))}
               </div>
             )}
-            
+
+            {/* Pending Role Assignments Section for SUPERADMIN */}
+            {user?.role === 'SUPERADMIN' && pendingRoles.length > 0 && (
+              <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--border-color)', paddingTop: '1.25rem' }}>
+                <h4 style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.75rem', color: 'var(--text-dim)' }}>Pending Role Assignments ({pendingRoles.length})</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '150px', overflowY: 'auto' }}>
+                  {pendingRoles.map(p => (
+                    <div key={p.id} className="flex-between" style={{ padding: '0.5rem 0.75rem', background: 'rgba(255, 255, 255, 0.01)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', fontSize: '0.8rem' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontWeight: 500, color: 'var(--text-main)' }}>{p.email}</span>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>Pre-assigned role</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span className={`badge ${p.role === 'ADMIN' ? 'badge-admin' : 'badge-member'}`} style={{ fontSize: '0.65rem', padding: '0.05rem 0.3rem' }}>
+                          {p.role}
+                        </span>
+                        <button
+                          onClick={() => handleDeletePendingRole(p.id)}
+                          className="btn"
+                          style={{ background: 'none', border: 'none', padding: '0.2rem', color: 'var(--text-dim)', cursor: 'pointer' }}
+                          onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-danger)'}
+                          onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-dim)'}
+                          title="Revoke Pre-assigned Role"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+             
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
               <button onClick={() => setShowUsersModal(false)} className="btn btn-secondary">Close</button>
             </div>

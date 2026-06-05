@@ -94,8 +94,13 @@ function Profile() {
             </h3>
             
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
-              <span className={`badge ${user?.role === 'ADMIN' ? 'badge-admin' : 'badge-member'}`} style={{ fontSize: '0.75rem', padding: '0.2rem 0.6rem' }}>
-                {user?.role === 'ADMIN' ? (
+              <span className={`badge ${user?.role === 'SUPERADMIN' ? 'badge-superadmin' : (user?.role === 'ADMIN' ? 'badge-admin' : 'badge-member')}`} style={{ fontSize: '0.75rem', padding: '0.2rem 0.6rem' }}>
+                {user?.role === 'SUPERADMIN' ? (
+                  <span className="flex-align-center" style={{ gap: '4px' }}>
+                    <Shield size={12} />
+                    Super Admin
+                  </span>
+                ) : user?.role === 'ADMIN' ? (
                   <span className="flex-align-center" style={{ gap: '4px' }}>
                     <Shield size={12} />
                     System Admin

@@ -308,13 +308,13 @@ function Projects() {
         <div>
           <h1 style={{ fontSize: '2rem', fontWeight: 800 }}>Project Workspace</h1>
           <p style={{ color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-            {user?.role === 'ADMIN' 
+            {(user?.role === 'ADMIN' || user?.role === 'SUPERADMIN') 
               ? 'Manage organization projects, configure access scopes, and audit tasks.' 
               : 'Browse active workspaces and task board pipelines you belong to.'}
           </p>
         </div>
 
-        {user?.role === 'ADMIN' && (
+        {(user?.role === 'ADMIN' || user?.role === 'SUPERADMIN') && (
           <button onClick={() => setShowModal(true)} className="btn btn-primary">
             <Plus size={18} />
             New Project
@@ -334,11 +334,11 @@ function Projects() {
           <Folder size={48} style={{ color: 'var(--text-dim)', marginBottom: '1rem' }} />
           <h3>No Projects Found</h3>
           <p style={{ color: 'var(--text-muted)', marginTop: '0.5rem', marginBottom: '1.5rem' }}>
-            {user?.role === 'ADMIN' 
+            {(user?.role === 'ADMIN' || user?.role === 'SUPERADMIN') 
               ? "You haven't created or joined any projects yet. Click 'New Project' to get started!"
               : "You are not assigned to any projects. Please contact your workspace administrator."}
           </p>
-          {user?.role === 'ADMIN' && (
+          {(user?.role === 'ADMIN' || user?.role === 'SUPERADMIN') && (
             <button onClick={() => setShowModal(true)} className="btn btn-primary">Create Project</button>
           )}
         </div>
@@ -352,7 +352,7 @@ function Projects() {
                     {project.name}
                   </Link>
                   <div style={{ display: 'flex', gap: '0.25rem' }}>
-                    {(user?.role === 'ADMIN' || project.ownerId === user?.id) && (
+                    {(user?.role === 'ADMIN' || user?.role === 'SUPERADMIN' || project.ownerId === user?.id) && (
                       <>
                         <button 
                           onClick={() => openEditModal(project)} 

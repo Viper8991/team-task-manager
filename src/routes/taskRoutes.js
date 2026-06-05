@@ -23,7 +23,7 @@ router.post('/', authenticateToken, async (req, res) => {
     }
 
     // Verify permission: Must be Admin or the Project Owner
-    if (req.user.role !== 'ADMIN' && project.ownerId !== req.user.id) {
+    if (req.user.role !== 'ADMIN' && req.user.role !== 'SUPERADMIN' && project.ownerId !== req.user.id) {
       return res.status(403).json({ error: 'Access denied: Only project owner or system admin can create tasks' });
     }
 
@@ -150,7 +150,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
     }
 
     const isProjectOwner = task.project.ownerId === userId;
-    if (userRole === 'ADMIN' || isProjectOwner) {
+    if (userRole === 'ADMIN' || userRole === 'SUPERADMIN' || isProjectOwner) {
       // Validate assignee if it's being updated
       if (assigneeId && assigneeId !== task.assigneeId) {
         const isMember = await prisma.projectMember.findUnique({
@@ -252,7 +252,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Task not found' });
     }
 
-    if (userRole !== 'ADMIN' && task.project.ownerId !== userId) {
+    if (userRole !== 'ADMIN' && userRole !== 'SUPERADMIN' && task.project.ownerId !== userId) {
       return res.status(403).json({ error: 'Access denied: Only project owner or system admin can delete tasks' });
     }
 
@@ -301,7 +301,7 @@ router.get('/dashboard', authenticateToken, async (req, res) => {
     // 2. Project progress overview
     // If Admin, get all projects. If Member, get projects they belong to.
     let userProjects;
-    if (userRole === 'ADMIN') {
+    if (userRole === 'ADMIN' || userRole === 'SUPERADMIN') {
       userProjects = await prisma.project.findMany({
         include: {
           tasks: true
@@ -334,7 +334,7 @@ router.get('/dashboard', authenticateToken, async (req, res) => {
 
     // 3. System stats for Admin dashboard
     let adminStats = null;
-    if (userRole === 'ADMIN') {
+    if (userRole === 'ADMIN' || userRole === 'SUPERADMIN') {
       const allUsersCount = await prisma.user.count();
       const allProjectsCount = await prisma.project.count();
       const allTasksCount = await prisma.task.count();

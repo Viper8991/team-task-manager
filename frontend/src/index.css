@@ -246,6 +246,7 @@ input::-ms-clear {
 .badge-high { background: rgba(239, 68, 68, 0.05); color: var(--priority-high); border: 1px solid rgba(239, 68, 68, 0.12); }
 
 .badge-admin { background: rgba(139, 92, 246, 0.08); color: var(--primary); border: 1px solid rgba(139, 92, 246, 0.15); }
+.badge-superadmin { background: rgba(217, 119, 6, 0.08); color: var(--color-warning); border: 1px solid rgba(217, 119, 6, 0.15); }
 .badge-member { background: rgba(0, 0, 0, 0.03); color: var(--text-muted); border: 1px solid rgba(0, 0, 0, 0.06); }
 
 /* Left Sidebar Navigation */

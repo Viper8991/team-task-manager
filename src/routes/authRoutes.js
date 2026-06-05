@@ -36,13 +36,28 @@ router.post('/register', async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
-    // If this is the first user in the system, make them ADMIN. Otherwise, MEMBER.
+    // Determine the role
     const userCount = await prisma.user.count();
-    const role = userCount === 0 ? 'ADMIN' : 'MEMBER';
+    let role = 'MEMBER';
+    
+    if (userCount === 0) {
+      role = 'SUPERADMIN';
+    } else {
+      const pendingAssignment = await prisma.pendingRole.findUnique({
+        where: { email: email.toLowerCase().trim() }
+      });
+      if (pendingAssignment) {
+        role = pendingAssignment.role;
+        // Delete pending assignment
+        await prisma.pendingRole.delete({
+          where: { email: email.toLowerCase().trim() }
+        });
+      }
+    }
 
     const user = await prisma.user.create({
       data: {
-        email,
+        email: email.toLowerCase().trim(),
         passwordHash,
         name,
         role,
@@ -142,8 +157,8 @@ router.get('/users', authenticateToken, async (req, res) => {
 
 // Admin-assisted password reset
 router.post('/admin-reset-password', authenticateToken, async (req, res) => {
-  // Check if the requester is an ADMIN
-  if (req.user.role !== 'ADMIN') {
+  // Check if the requester is an ADMIN or SUPERADMIN
+  if (req.user.role !== 'ADMIN' && req.user.role !== 'SUPERADMIN') {
     return res.status(403).json({ error: 'Access denied. Admins only.' });
   }
 
@@ -189,7 +204,7 @@ router.post('/admin-reset-password', authenticateToken, async (req, res) => {
 router.get('/admins-members', authenticateToken, async (req, res) => {
   try {
     const admins = await prisma.user.findMany({
-      where: { role: 'ADMIN' },
+      where: { role: { in: ['ADMIN', 'SUPERADMIN'] } },
       select: {
         id: true,
         name: true,
@@ -264,6 +279,99 @@ router.get('/admins-members', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Error fetching admins and members:', error);
     return res.status(500).json({ error: 'Failed to fetch admins and members list' });
+  }
+});
+
+// Assign role (SUPERADMIN only)
+router.post('/assign-role', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'SUPERADMIN') {
+    return res.status(403).json({ error: 'Access denied. Superadmins only.' });
+  }
+
+  const { email, role } = req.body;
+
+  if (!email || !role) {
+    return res.status(400).json({ error: 'Email and role are required' });
+  }
+
+  if (role !== 'ADMIN' && role !== 'MEMBER') {
+    return res.status(400).json({ error: 'Role must be ADMIN or MEMBER' });
+  }
+
+  const targetEmail = email.toLowerCase().trim();
+
+  try {
+    // Check if target user exists
+    const targetUser = await prisma.user.findUnique({
+      where: { email: targetEmail }
+    });
+
+    if (targetUser) {
+      if (targetUser.role === 'SUPERADMIN') {
+        return res.status(400).json({ error: 'Cannot modify the role of a SUPERADMIN' });
+      }
+
+      const updatedUser = await prisma.user.update({
+        where: { email: targetEmail },
+        data: { role },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true
+        }
+      });
+
+      return res.json({ message: `Successfully updated ${updatedUser.name}'s role to ${role}.`, user: updatedUser });
+    } else {
+      // User doesn't exist, create a pending role assignment
+      const pending = await prisma.pendingRole.upsert({
+        where: { email: targetEmail },
+        update: { role },
+        create: { email: targetEmail, role }
+      });
+
+      return res.json({ message: `Role ${role} pre-assigned to unregistered email ${targetEmail}.`, pending });
+    }
+  } catch (error) {
+    console.error('Error assigning role:', error);
+    return res.status(500).json({ error: 'Failed to assign role' });
+  }
+});
+
+// Get all pending role assignments (SUPERADMIN only)
+router.get('/pending-roles', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'SUPERADMIN') {
+    return res.status(403).json({ error: 'Access denied. Superadmins only.' });
+  }
+
+  try {
+    const pending = await prisma.pendingRole.findMany({
+      orderBy: { createdAt: 'desc' }
+    });
+    return res.json(pending);
+  } catch (error) {
+    console.error('Error fetching pending roles:', error);
+    return res.status(500).json({ error: 'Failed to fetch pending roles' });
+  }
+});
+
+// Delete a pending role assignment (SUPERADMIN only)
+router.delete('/pending-roles/:id', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'SUPERADMIN') {
+    return res.status(403).json({ error: 'Access denied. Superadmins only.' });
+  }
+
+  const { id } = req.params;
+
+  try {
+    await prisma.pendingRole.delete({
+      where: { id }
+    });
+    return res.json({ message: 'Pending role assignment deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting pending role:', error);
+    return res.status(500).json({ error: 'Failed to delete pending role assignment' });
   }
 });
 

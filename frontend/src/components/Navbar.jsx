@@ -356,8 +356,13 @@ function Navbar() {
           <div className="profile-info" style={{ textAlign: 'left' }}>
             <span className="profile-name" style={{ display: 'block' }}>{user?.name}</span>
             <div className="flex-align-center gap-2" style={{ marginTop: '0.1rem' }}>
-              <span className={`badge badge-small ${user?.role === 'ADMIN' ? 'badge-admin' : 'badge-member'}`} style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem' }}>
-                {user?.role === 'ADMIN' ? (
+              <span className={`badge badge-small ${user?.role === 'SUPERADMIN' ? 'badge-superadmin' : (user?.role === 'ADMIN' ? 'badge-admin' : 'badge-member')}`} style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem' }}>
+                {user?.role === 'SUPERADMIN' ? (
+                  <span className="flex-align-center" style={{ gap: '2px' }}>
+                    <Shield size={10} />
+                    Superadmin
+                  </span>
+                ) : user?.role === 'ADMIN' ? (
                   <span className="flex-align-center" style={{ gap: '2px' }}>
                     <Shield size={10} />
                     Admin

@@ -10,7 +10,7 @@ async function checkProjectAccess(req, res, next) {
   const userId = req.user.id;
   const userRole = req.user.role;
 
-  if (userRole === 'ADMIN') {
+  if (userRole === 'ADMIN' || userRole === 'SUPERADMIN') {
     return next();
   }
 
@@ -41,7 +41,7 @@ async function checkProjectOwnerOrAdmin(req, res, next) {
   const userId = req.user.id;
   const userRole = req.user.role;
 
-  if (userRole === 'ADMIN') {
+  if (userRole === 'ADMIN' || userRole === 'SUPERADMIN') {
     return next();
   }
 
@@ -71,7 +71,7 @@ router.get('/', authenticateToken, async (req, res) => {
   try {
     let projects;
 
-    if (req.user.role === 'ADMIN') {
+    if (req.user.role === 'ADMIN' || req.user.role === 'SUPERADMIN') {
       // Admins see all projects
       projects = await prisma.project.findMany({
         include: {

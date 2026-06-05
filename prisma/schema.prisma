@@ -82,3 +82,11 @@ model Notification {
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
 }
+
+model PendingRole {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  role      String   // ADMIN or MEMBER
+  createdAt DateTime @default(now())
+}
+

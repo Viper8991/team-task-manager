@@ -49,8 +49,8 @@ function requireRole(roles) {
   };
 }
 
-const requireAdmin = requireRole(['ADMIN']);
-const requireMember = requireRole(['ADMIN', 'MEMBER']);
+const requireAdmin = requireRole(['SUPERADMIN', 'ADMIN']);
+const requireMember = requireRole(['SUPERADMIN', 'ADMIN', 'MEMBER']);
 
 module.exports = {
   authenticateToken,
@@ -58,3 +58,4 @@ module.exports = {
   requireAdmin,
   requireMember
 };
+
